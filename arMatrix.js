@@ -677,13 +677,13 @@ function setPalette(p) {
 
 
 
-function mouseOnGUI() {
-  let res = false
-  if (mouseIsPressed) {
-    
-  }
-  return res
-}
+// function mouseOnGUI() {
+//   let res = false
+//   if (mouseIsPressed) {
+//    
+//   }
+//   return res
+// }
 
 
 
