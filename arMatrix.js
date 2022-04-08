@@ -11,8 +11,7 @@
 //   - infinite undo/redo of moidifications (done)
 //   - pick fill values intuitively (done)
 //   - matrix value/pixel color modification (free draw tool (done), boolean mouseOnGUI function to prevent overlapping behaviours (done))
-//   - move free drawing out of matrix drawing loop (use some smarter algorithm to get x, y indexes based on mousePos)
-//   - line tool, toggleable tools selection panel on lower right
+//   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
 //   - fill tool (change all neighboring pixels of same value at once)
 //   - rect tool, circle tool
@@ -25,8 +24,8 @@
 // Inner logic
 p5.disableFriendlyErrors = true
 let m     = [] // Matrix
-let mw    = 16 // Matrix width
-let mh    = 16 // Matrix height
+let mw    = 8 // Matrix width
+let mh    = 8 // Matrix height
 let dv    = 0 // Default matrix value
 // let prevm = [] // Previous frame matrix
 let mod   = false // m was modified during this frame
@@ -99,8 +98,9 @@ let cPick // Color picked from color wheel
 let cHover // Color under pointer from color wheel
 let cPicking = false // Currently picking a color using the color wheel
 let cPickingIndex = null // Index (cPalette) of color being currently picked
-let cSelectIndex = 1 // Index (cPalette) of currently selected color
+let cSelectIndex = 2 // Index (cPalette) of currently selected color
 let vMod = false // Currently modifying luminosity value on color wheel
+// let vModToggle = false // Luminosity value modified last frame
 let pxIndex // Index of current pixel while hovering over color wheel
 let v = 0.8 // luminosity value
 let cWx // Color wheel x pos (set in setup)
@@ -112,7 +112,11 @@ let cPaletteh
 let clickButtonsw
 let clickButtonsh
 let cWheelw
-let cWheelh // Size (width and height) of GUI elements (set in setup)
+let cWheelh // Size (width and height) of GUI element (set in setup)
+let onPalette
+let onClickButtons
+let onWheel // Mouse currently on top of GUI element (set in mouseOnGUI())
+let mouseIndex // Holds output from mousePosToMatrixIndex()
 
 
 function preload() {
@@ -221,25 +225,15 @@ function draw() {
       // textAlign(CENTER, CENTER);
       // textSize(s/1.5)
       // text(m[y][x], hRef + x*s+s/2, vRef + y*s+s/2)
-      
-      // Free drawing
-      
-      if (mouseIsPressed && mouseButton == LEFT) {
-        if (!onGUI) {
-          if (m[y][x] != cSelectIndex-1) {
-            if (mouseX > xpx1 - s/2 && mouseX < xpx2 - s/2 && mouseY > ypx1 - s/2 && mouseY < ypx2 - s/2) {
-              pxChange = true
-              m[y][x] = cSelectIndex-1
-            } 
-          }
-        }
-      }
     }
   }
+  // Free draw tool
+  freeDraw()
   
-  // Draw GUI
+  // Show GUI
   drawClickButtons()
   drawColorPalette()
+  mouseHeldWheelInteraction()
   drawColorWheel()
   updateHoverColor()
   
@@ -260,6 +254,7 @@ function draw() {
     pxChange = false
   }
   // GUIdebug()
+  // gridDebug()
 }
   
 
@@ -570,6 +565,26 @@ function mouseClicked() {
   }
   
   // Colors
+  // Palette
+  for (let valCol of cPalette) {
+    let bx = valCol[3]
+    let by = valCol[4]
+    let i  = valCol[0] + 1
+    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2) {
+      if (mouseY > by - uipx/2 && mouseY < by + uipx/2) {
+        if (i == cSelectIndex) {
+          if (cPickingIndex != i) {
+            cPickingIndex = i
+            cPicking = true
+          } else {
+            cPickingIndex = null
+            cPicking = false
+          }
+        }
+        cSelectIndex = i
+      }
+    }
+  }
   // Wheel
   if (cPicking) {
     if (dist(mouseX, mouseY, cWx, cWy) < cWd/2) {
@@ -582,27 +597,9 @@ function mouseClicked() {
       updatePixels()
       cPick = [cPick[0]*v, cPick[1]*v, cPick[2]*v]
       cPalette[cPickingIndex][1] = [...cPick]
-      cPicking = false
       cPickingIndex = null
+      cPicking = false
       mod = true
-    } else if ((mouseX > cWx + cWd*1.15/2 || mouseX < cWx - cWd*1.15/2 || mouseY > cWy + cWd/8 + cWd*1.4/2 || mouseY < cWy + cWd/8 - cWd*1.4/2)) { // Click outside of color wheel window
-      cPicking = false
-      cPickingIndex = null
-    }
-  }
-  // Palette
-  for (let valCol of cPalette) {
-    let bx = valCol[3]
-    let by = valCol[4]
-    let i  = valCol[0] + 1
-    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2) {
-      if (mouseY > by - uipx/2 && mouseY < by + uipx/2) {
-        if (i == cSelectIndex) {
-          cPickingIndex = i
-          cPicking = true
-        }
-        cSelectIndex = i
-      }
     }
   }
 }
@@ -620,8 +617,10 @@ function deepCopy2D(a) {
 
 
 function mouseReleased() {
-  // Luminosity control
-  vMod = false
+  // Color wheel luminosity
+  if (vMod) {
+    vMod = false
+  }
   
   // Drawing
   if (pxChange) {
@@ -651,12 +650,6 @@ function drawColorWheel() {
     fill(uihc)
     ellipse(cWx-cWd/2+v*cWd, cWy + cWd/1.55, cWd/20)
     rectMode(CENTER)
-    if (mouseIsPressed) {
-      if (vMod || ((mouseX > cWx-cWd/2-cWd/40 && mouseX < cWx+cWd/2+cWd/40) && (mouseY > cWy + cWd/1.8 && mouseY < cWy + cWd/1.3))) {
-        v = constrain(map(mouseX, cWx-cWd/2, cWx+cWd/2, 0, 1), 0, 1)
-        vMod = true
-      }
-    }
   }
 }
 
@@ -728,14 +721,11 @@ function keyboardShortcuts() {
 
 function mouseOnGUI() {
   onGUI = false
+  onPalette      = mouseX < cPalettew && mouseY < cPaletteh
+  onClickButtons = mouseX > (width - clickButtonsw) && mouseY < clickButtonsh 
+  onWheel        = mouseX < cWheelw && mouseY < cPaletteh + cWheelh && mouseY > cPaletteh
   if (mouseIsPressed) {
-    let onPalette      = mouseX < cPalettew && mouseY < cPaletteh
-    let onClickButtons = mouseX > (width - clickButtonsw) && mouseY < clickButtonsh 
-    let onWheel        = false
-    if (cPicking) {
-      onWheel = mouseX < cWheelw && mouseY < cPaletteh + cWheelh // && mouseY > cPaletteh
-    }
-    if (onPalette || onClickButtons || onWheel) {
+    if (onPalette || onClickButtons || (cPicking && onWheel) || vMod) {
       onGUI = true
     }
   }
@@ -761,13 +751,54 @@ function GUIdebug() {
 
 
 
+function gridDebug() {
+  ellipse(hRef - s/2,          vRef - s/2,          10, 10) 
+  ellipse(hRef - s/2,          vRef - s/2 + s*mh,   10, 10)
+  ellipse(hRef - s/2 + s*mw,   vRef - s/2,          10, 10)
+  ellipse(hRef - s/2 + s*mw,   vRef - s/2 + s*mh,   10, 10) 
+}
 
 
 
+function mousePosToMatrixIndex() {
+  x = floor((constrain(mouseX, hRef - s/2 - 1, hRef - s/2 + s*mw + 1) - (hRef - s/2))/s)
+  y = floor((constrain(mouseY, vRef - s/2 - 1, vRef - s/2 + s*mh + 1) - (vRef - s/2))/s)
+  // console.log(x, y, x >= 0 && x < mw && y >= 0 && y < mh)
+  return [x, y, x >= 0 && x < mw && y >= 0 && y < mh]
+}
 
 
 
+function mouseHeldWheelInteraction() {
+  if (cPicking && mouseIsPressed) {
+    if (vMod || ((mouseX > cWx-cWd/2-cWd/40 && mouseX < cWx+cWd/2+cWd/40) && (mouseY > cWy + cWd/1.8 && mouseY < cWy + cWd/1.3))) {
+      v = constrain(map(mouseX, cWx-cWd/2, cWx+cWd/2, 0, 1), 0, 1)
+      vMod = true
+    } else if (!vMod) {
+      if (!onWheel) {
+        cPicking = false
+      }
+    }
+  }
+}
 
+
+
+function freeDraw() {
+  if (mouseIsPressed && mouseButton == LEFT) {
+    mouseIndex = mousePosToMatrixIndex()
+    x = mouseIndex[0]
+    y = mouseIndex[1]
+    if (mouseIndex[2]) { // Mouse pointer is on top of grid
+      if (!onGUI) {
+        if (m[y][x] != cSelectIndex-1) {
+          pxChange = true
+          m[y][x] = cSelectIndex-1
+        }
+      }
+    }
+  }
+}
 
 
 
