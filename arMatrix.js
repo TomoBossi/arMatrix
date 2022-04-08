@@ -1,31 +1,26 @@
-// To be implemented using PyGame.
+// Developed and tested on Firefox 98.0.2 for Manjaro Linux, running p5js 1.4.0
+// To be implemented using PyGame
 
 // Planned functionality: GUI for very easily creating and modifying 2D matrices
 // 2D matrices could be of any given size/dimensions
-// Visually and intuitively, the user should be able to: 
-//   - see a grid where each position holds it's corresponding value and/or a color-coded representation (done)
-//   - zoom in and out and pan around at will with a re-centering feature (done)
-//   - increase the matrix resolution by an integer factor: Turn every pixel into a 2x2 or 3x3 etc. of the same value as original pixel (done, but factor is fixed and can only be changed from console)
-//   - automatically console-log current matrix (done)
-//   - change the matrix dimensions at any point (cut/fill with default depending on current matrix size) (done, but only doable from console)
-//   - infinite undo/redo of moidifications (done)
-//   - pick fill values intuitively (done)
-//   - matrix value/pixel color modification (free draw tool (done), boolean mouseOnGUI function to prevent overlapping behaviours (done))
+// To do list:
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
 //   - fill tool (change all neighboring pixels of same value at once)
 //   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
 //   - save/load/copy for js/numpy tool
+//   - better GUI feedback on hover and button press
 //   - helper toggleable overlay with brief GUI explanations
+//   - replace color wheel png by a shader precomputed in setup
 //   - layers
 
 // Global variables
 // Inner logic
 p5.disableFriendlyErrors = true
 let m     = [] // Matrix
-let mw    = 8 // Matrix width
-let mh    = 8 // Matrix height
+let mw    = 16 // Matrix width
+let mh    = 16 // Matrix height
 let dv    = 0 // Default matrix value
 // let prevm = [] // Previous frame matrix
 let mod   = false // m was modified during this frame
@@ -59,24 +54,26 @@ let vPan   = 0 // Vertical camera pan
 let pan    = [] // Holds hPan and vPan
 let bgc    = 35 // Background color
 let tca    = [255, 69] // Text color and alpha (constant)
-let ta     = 0   // Text alpha (dynamic, based on zoom)
 let lineca = [120, 255] // Gridline color and alpha (constant)
 let linea  = 255 // Gridline alpha (dynamic, based on zoom)
 let linew  = 1   // Gridline width
 let totColors = 30 // Palette size
 let colorsPerRow = 15 // Colors per palette row
 let cPaletteRows // Number of rows on color palette
-let row = 1 // Palette row index
+let row // Palette row index
 let rC // Random color
-let cPalette = [[-1, [222,  82,  82], [222,  82,  82], 0, 0], 
-                [ 0, [bgc, bgc, bgc], [bgc, bgc, bgc], 0, 0],
-                [ 1, [ 40, 200, 100], [ 40, 200, 100], 0, 0],
-                [ 2, [ 62, 152, 218], [ 62, 152, 218], 0, 0],
-                [ 3, [200, 200, 200], [200, 200, 200], 0, 0],
-                [ 4, [177,  88,   6], [177,  88,   6], 0, 0],
-                [ 5, [200, 200,  40], [200, 200,  40], 0, 0],
-                [ 6, [187,  92, 180], [187,  92, 180], 0, 0],
-                [ 7, [100, 100, 100], [100, 100, 100], 0, 0],] // Index based value-color array, [value, cPick, tempPick, buttonx, buttony] (position data set in setup)
+let nNeg = 1 // Number of negative values, must be at least 1 and at most totColors - 1 (constrained in setup)
+let cPaletteFixed = [[-1, [222,  82,  82], [222,  82,  82], 0, 0],
+                     [ 0, [bgc, bgc, bgc], [bgc, bgc, bgc], 0, 0],
+                     [ 1, [ 40, 200, 100], [ 40, 200, 100], 0, 0],
+                     [ 2, [ 62, 152, 218], [ 62, 152, 218], 0, 0],
+                     [ 3, [200, 200, 200], [200, 200, 200], 0, 0],
+                     [ 4, [177,  88,   6], [177,  88,   6], 0, 0],
+                     [ 5, [200, 200,  40], [200, 200,  40], 0, 0],
+                     [ 6, [187,  92, 180], [187,  92, 180], 0, 0],
+                     [ 7, [100, 100, 100], [100, 100, 100], 0, 0],] // Index based value-color array, [value, cPick, tempPick, buttonx, buttony] (value and position data set in setup)
+let nFixedColors = cPaletteFixed.length // Number of preselected colors
+let cPalette = [] // Holds all color palette data
 
 // Interactivity
 let prevx // Previous mouseX pos
@@ -90,7 +87,7 @@ let verbose = true // If true, prints m whenever a change is made to it
 let clickButtonArray = [[0, 0, undo, undoButton],
                         [0, 0, redo, redoButton],
                         [0, 0, reCenter, reCenterButton],
-                        [0, 0, enlargeMatrix, enlargeMatrixButton, 2],] // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, functionArgs]](set in setup)
+                        [0, 0, enlargeMatrix, enlargeMatrixButton, 2],] // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs]] (set in setup)
 let nClickButtons = clickButtonArray.length // Number of clickable buttons
 let undoAble = false // Ctrl key is being held down
 let redoAble = false // Ctrl+shift key is being held down
@@ -98,9 +95,8 @@ let cPick // Color picked from color wheel
 let cHover // Color under pointer from color wheel
 let cPicking = false // Currently picking a color using the color wheel
 let cPickingIndex = null // Index (cPalette) of color being currently picked
-let cSelectIndex = 2 // Index (cPalette) of currently selected color
+let cSelectIndex // Index (cPalette) of currently selected color (set in setup, defaults to 1 if possible)
 let vMod = false // Currently modifying luminosity value on color wheel
-// let vModToggle = false // Luminosity value modified last frame
 let pxIndex // Index of current pixel while hovering over color wheel
 let v = 0.8 // luminosity value
 let cWx // Color wheel x pos (set in setup)
@@ -156,10 +152,14 @@ function setup() {
     i++
   }
   
-  if (totColors > cPalette.length) {
-    for (let i = cPalette[cPalette.length-1][0] + 1; i < totColors-1; i++) {
+  nNeg = constrain(nNeg, 1, totColors - 1)
+  cSelectIndex = constrain(nNeg+1, nNeg, totColors-1)
+  for (let i = -nNeg; i < totColors - nNeg; i++) {
+    if (i < -1 || i > nFixedColors - 2) {
       rC = [random(255), random(255), random(255)]
       cPalette.push([i, [...rC], [...rC], 0, 0])
+    } else {
+      cPalette.push([i, [...cPaletteFixed[i+1][1]], [...cPaletteFixed[i+1][2]], 0, 0])
     }
   }
   
@@ -184,6 +184,7 @@ function setup() {
   
   imageMode(CENTER)
   ellipseMode(CENTER)
+  
   mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()])
 }
 
@@ -204,7 +205,6 @@ function draw() {
   
   zFac = constrain(zoom, 0, 1)
   la   = lineca[1] * zFac**1.5
-  // ta   = tca[1] * zFac**2
   
   // Draw grid
   mouseOnGUI()
@@ -217,20 +217,14 @@ function draw() {
       ypx2 = ypx1 + s
       stroke(lineca[0], la)
       strokeWeight(linew)
-      fill(cPalette[m[y][x] + 1][2])
+      fill(cPalette[m[y][x] + nNeg][2])
       rect(xpx1, ypx1, s, s)
-      
-      // fill(tca[0], ta)
-      // noStroke()
-      // textAlign(CENTER, CENTER);
-      // textSize(s/1.5)
-      // text(m[y][x], hRef + x*s+s/2, vRef + y*s+s/2)
     }
   }
   // Free draw tool
   freeDraw()
   
-  // Show GUI
+  // GUI display and interaction (except for mouseClicked and mouseReleased)
   drawClickButtons()
   drawColorPalette()
   mouseHeldWheelInteraction()
@@ -243,7 +237,7 @@ function draw() {
   if (frameCount == 1 || mod) {
     if (verbose) {
       console.log(showMatrix(m))
-      console.log(getCurrentPalette())
+      // console.log(showMatrix(getCurrentPalette()))
     } if (!undoredo) {
       cm++
       mHist = mHist.slice(0, cm)
@@ -259,28 +253,42 @@ function draw() {
   
 
   
-function showMatrix(m) {
+function showMatrix(m, type = null) {
   let rowText = ''
   let matrixText = '['
-  for (let y = 0; y < mh; y++) {
-    for (let x = 0; x < mw; x++) {
-      if (m[y][x] < 0) {
-        rowText += ''+m[y][x]+','
-      } else {
+  if (type == 'np') {
+     matrixText = 'np.asarray(' + matrixText
+  }
+  for (let y = 0; y < m.length; y++) {
+    for (let x = 0; x < m[0].length; x++) {
+      if (m[y][x] < 0 || m[y][x] > 9) {
         rowText += ' '+m[y][x]+','
+      } else {
+        rowText += '  '+m[y][x]+','
       }
     }
-    if (y == 0) {
-      matrixText += '['+rowText+'],'
+    if (type == 'np') {
+      if (y == 0) {
+        matrixText += 'np.asarray(['+rowText+']),'
+      } else {
+        matrixText += '            np.asarray(['+rowText+']),'
+      }
     } else {
-      matrixText +=' ['+rowText+'],'
+      if (y == 0) {
+        matrixText += '['+rowText+'],'
+      } else {
+        matrixText +=' ['+rowText+'],'
+      }
     }
-    if (y != mh-1) {
+    if (y != m.length-1) {
       matrixText += '\n'
     }
     rowText = ''
   }
   matrixText += ']'
+  if (type == 'np') {
+     matrixText += ')'
+  }
   return matrixText
 }
   
@@ -515,7 +523,7 @@ function drawColorPalette() {
     let col = valCol[2]
     let bx  = valCol[3]
     let by  = valCol[4]
-    let isSelected = cSelectIndex == val+1
+    let isSelected = cSelectIndex == val + nNeg
     rectMode(CENTER)
     if (isSelected) {
       stroke(bgc)
@@ -569,7 +577,7 @@ function mouseClicked() {
   for (let valCol of cPalette) {
     let bx = valCol[3]
     let by = valCol[4]
-    let i  = valCol[0] + 1
+    let i  = valCol[0] + nNeg
     if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2) {
       if (mouseY > by - uipx/2 && mouseY < by + uipx/2) {
         if (i == cSelectIndex) {
@@ -791,9 +799,9 @@ function freeDraw() {
     y = mouseIndex[1]
     if (mouseIndex[2]) { // Mouse pointer is on top of grid
       if (!onGUI) {
-        if (m[y][x] != cSelectIndex-1) {
+        if (m[y][x] != cSelectIndex - nNeg) {
           pxChange = true
-          m[y][x] = cSelectIndex-1
+          m[y][x] = cSelectIndex - nNeg
         }
       }
     }
