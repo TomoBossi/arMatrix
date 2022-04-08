@@ -10,8 +10,12 @@
 //   - change the matrix dimensions at any point (cut/fill with default depending on current matrix size) (done, but only doable from console)
 //   - infinite undo/redo of moidifications (done)
 //   - pick fill values intuitively (done)
-//   - single pixel value modification (free draw tool (done), boolean mouseOnGUI function to prevent overlapping behaviours)
-//   - multiple pixel value modification (rectangle tool, line tool, circle tool, free draw tool)
+//   - matrix value/pixel color modification (free draw tool (done), boolean mouseOnGUI function to prevent overlapping behaviours (done))
+//   - move free drawing out of matrix drawing loop (use some smarter algorithm to get x, y indexes based on mousePos)
+//   - line tool, toggleable tools selection panel on lower right
+//   - cut tool (keep part of matrix)
+//   - fill tool (change all neighboring pixels of same value at once)
+//   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
 //   - save/load/copy for js/numpy tool
 //   - helper toggleable overlay with brief GUI explanations
@@ -21,8 +25,8 @@
 // Inner logic
 p5.disableFriendlyErrors = true
 let m     = [] // Matrix
-let mw    = 8 // Matrix width
-let mh    = 8 // Matrix height
+let mw    = 16 // Matrix width
+let mh    = 16 // Matrix height
 let dv    = 0 // Default matrix value
 // let prevm = [] // Previous frame matrix
 let mod   = false // m was modified during this frame
@@ -62,6 +66,7 @@ let linea  = 255 // Gridline alpha (dynamic, based on zoom)
 let linew  = 1   // Gridline width
 let totColors = 30 // Palette size
 let colorsPerRow = 15 // Colors per palette row
+let cPaletteRows // Number of rows on color palette
 let row = 1 // Palette row index
 let rC // Random color
 let cPalette = [[-1, [222,  82,  82], [222,  82,  82], 0, 0], 
@@ -87,6 +92,9 @@ let clickButtonArray = [[0, 0, undo, undoButton],
                         [0, 0, redo, redoButton],
                         [0, 0, reCenter, reCenterButton],
                         [0, 0, enlargeMatrix, enlargeMatrixButton, 2],] // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, functionArgs]](set in setup)
+let nClickButtons = clickButtonArray.length // Number of clickable buttons
+let undoAble = false // Ctrl key is being held down
+let redoAble = false // Ctrl+shift key is being held down
 let cPick // Color picked from color wheel
 let cHover // Color under pointer from color wheel
 let cPicking = false // Currently picking a color using the color wheel
@@ -99,7 +107,12 @@ let cWx // Color wheel x pos (set in setup)
 let cWy // Color wheel y pos (set in setup)
 let cWd = uipx*4 // Color wheel diameter
 let onGUI // Mouse pointer currently on GUI elements (palette, tools, etc.)
-
+let cPalettew
+let cPaletteh
+let clickButtonsw
+let clickButtonsh
+let cWheelw
+let cWheelh // Size (width and height) of GUI elements (set in setup)
 
 
 function preload() {
@@ -154,11 +167,19 @@ function setup() {
     i++
   }
 
+  cPaletteRows = floor(totColors/colorsPerRow)
   cWx = cWd/1.725 + uipx/5
-  cWy = cWd/1.725 + (1.25+floor(totColors/colorsPerRow))*(uipscl*uipx + uipx/3)
+  cWy = cWd/1.725 + uipx/5 + uipx/2 + 2*cPaletteRows*(uipx/1.25)*uipscl
+  
+  cPalettew = uipx/2 + 2*colorsPerRow*(uipx/1.25)*uipscl 
+  cPaletteh = uipx/2 + 2*cPaletteRows*(uipx/1.25)*uipscl
+  clickButtonsw = 2*uipx/1.25
+  clickButtonsh = nClickButtons*2*uipx/1.25
+  cWheelw = cWd/8 + cWd*1.15
+  cWheelh = cWd/8 + cWd*1.4
+  
   imageMode(CENTER)
   ellipseMode(CENTER)
-  
   mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()])
 }
 
@@ -166,6 +187,7 @@ function setup() {
 
 function draw() {
   background(bgc)
+  keyboardShortcuts()
   zoom = updateZoom(minZ, maxZ)
   s    = pxwh*zoom
   mwpx = s*mw
@@ -181,7 +203,7 @@ function draw() {
   // ta   = tca[1] * zFac**2
   
   // Draw grid
-  onGUI = false //mouseOnGUI()
+  mouseOnGUI()
   for (let y = 0; y < mh; y++) {
     for (let x = 0; x < mw; x++) {
       
@@ -218,8 +240,8 @@ function draw() {
   // Draw GUI
   drawClickButtons()
   drawColorPalette()
-  drawColorWheel()   // if (cPicking) {} is inside func
-  updateHoverColor() // if (cPicking) {} is inside func
+  drawColorWheel()
+  updateHoverColor()
   
   prevx = mouseX
   prevy = mouseY
@@ -227,7 +249,7 @@ function draw() {
   if (frameCount == 1 || mod) {
     if (verbose) {
       console.log(showMatrix(m))
-      // console.log(getCurrentPalette())
+      console.log(getCurrentPalette())
     } if (!undoredo) {
       cm++
       mHist = mHist.slice(0, cm)
@@ -237,10 +259,7 @@ function draw() {
     undoredo = false
     pxChange = false
   }
-  
-  // for (let matrix of mHist) {
-  //   console.log(showMatrix(matrix[0]))
-  // }
+  // GUIdebug()
 }
   
 
@@ -353,7 +372,6 @@ function enlargeMatrix(n) {
   m = nm
   mw = nmw
   mh = nmh
-  // reCenter()
   mod = true
 }
 
@@ -376,7 +394,6 @@ function reShapeMatrix(nmw, nmh) {
   m = nm
   mw = nmw
   mh = nmh
-  // reCenter()
   mod = true
 }
 
@@ -391,7 +408,6 @@ function undo() {
     mh = nm[2]
     p  = deepCopy2D(nm[3])
     setPalette(p)
-    // reCenter()
     mod = true
     undoredo = true
   }
@@ -408,7 +424,6 @@ function redo() {
     mh = nm[2]
     p  = deepCopy2D(nm[3])
     setPalette(p)
-    // reCenter()
     mod = true
     undoredo = true
   }
@@ -419,8 +434,6 @@ function redo() {
 function baseButton(x, y, color) {
   rectMode(CENTER)
   noStroke()
-  fill(bgc/2)
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10)
   fill(color)
   rect(x, y, uipx, uipx, uipx/10)
 }
@@ -428,6 +441,9 @@ function baseButton(x, y, color) {
 
 
 function reCenterButton(x, y) {
+  fill(bgc/2)
+  noStroke()
+  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10)
   baseButton(x, y, uibc)
   fill(uihc)
   ellipse(x, y, uipx*2.25/3)
@@ -440,6 +456,9 @@ function reCenterButton(x, y) {
 
 
 function enlargeMatrixButton(x, y) {
+  fill(bgc/2)
+  noStroke()
+  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10)
   baseButton(x, y, uibc)
   noFill()
   strokeWeight(uipx/20)
@@ -452,6 +471,9 @@ function enlargeMatrixButton(x, y) {
 
 
 function undoButton(x, y) {
+  fill(bgc/2)
+  noStroke()
+  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10)
   baseButton(x, y, uibc)
   fill(uihc)
   ellipse(x, y, uipx*1.8/3)
@@ -465,6 +487,9 @@ function undoButton(x, y) {
 
 
 function redoButton(x, y) {
+  fill(bgc/2)
+  noStroke()
+  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10)
   baseButton(x, y, uibc)
   fill(uihc)
   ellipse(x, y, uipx*1.8/3)
@@ -497,15 +522,18 @@ function drawColorPalette() {
     let by  = valCol[4]
     let isSelected = cSelectIndex == val+1
     rectMode(CENTER)
-    noStroke()
     if (isSelected) {
+      stroke(bgc)
+      strokeWeight(uipxrscld/15)
       fill(uihc)
-      rect(bx, by, uipxrscld*1.15, uipxrscld*1.15, uipxrscld/10)
-      rect(bx, by+uipxrscld*1.15/1.65, uipxrscld*1.15/2, uipxrscld/15, uipxrscld/15)
+      rect(bx, by, uipxrscld*1.3, uipxrscld*1.3, uipxrscld/6)
+      rect(bx, by+uipxrscld*1.4/1.65, uipxrscld*1.15/1.8, uipxrscld/6, uipxrscld/15)
     } else {
+      noStroke()
       fill(bgc/2)
       rect(bx + uipx/10, by + uipx/10, uipxrscld, uipxrscld, uipxrscld/10)
     }
+    noStroke()
     fill(col)
     rect(bx, by, uipxrscld, uipxrscld, uipxrscld/10)
     if ((col[0] + col[1] + col[2])/3 < 80) {
@@ -677,15 +705,59 @@ function setPalette(p) {
 
 
 
-// function mouseOnGUI() {
-//   let res = false
-//   if (mouseIsPressed) {
-//    
-//   }
-//   return res
-// }
+function keyboardShortcuts() {
+  if (keyIsDown(17)) {
+    undoAble = true
+    redoAble = false
+  } if (keyIsDown(17) && keyIsDown(16)) {
+    undoAble = false    
+    redoAble = true
+  }
+} function keyPressed() {
+  if (keyCode === 90) {
+    if (undoAble) {
+      undo()
+    } 
+    if (redoAble) {
+      redo()
+    }
+  }
+}
 
 
+
+function mouseOnGUI() {
+  onGUI = false
+  if (mouseIsPressed) {
+    let onPalette      = mouseX < cPalettew && mouseY < cPaletteh
+    let onClickButtons = mouseX > (width - clickButtonsw) && mouseY < clickButtonsh 
+    let onWheel        = false
+    if (cPicking) {
+      onWheel = mouseX < cWheelw && mouseY < cPaletteh + cWheelh // && mouseY > cPaletteh
+    }
+    if (onPalette || onClickButtons || onWheel) {
+      onGUI = true
+    }
+  }
+}
+
+
+
+function GUIdebug() {
+  fill(255, 30)
+  rectMode(CORNER)
+  
+  // cPalette
+  rect(0, 0, cPalettew, cPaletteh)
+  
+  // Tools (upper right)
+  rect(width - clickButtonsw, 0, clickButtonsw, clickButtonsh)
+  
+  // Color wheel
+  if (cPicking) {
+    rect(0, cPaletteh, cWheelw, cWheelh)
+  }
+}
 
 
 
