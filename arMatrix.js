@@ -250,7 +250,6 @@ function draw() {
   
   // GUIdebug()
   // gridDebug()
-  console.log(cPickedHolding)
 }
   
 
