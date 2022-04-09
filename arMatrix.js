@@ -2,6 +2,7 @@
 // To be implemented using PyGame
 
 // Planned functionality: GUI for very easily creating and modifying 2D matrices
+// Useful for creating 2D pixel art textures and for 2D game level design
 // 2D matrices could be of any given size/dimensions
 // To do list:
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
@@ -13,7 +14,8 @@
 //   - better GUI feedback on hover and button press
 //   - helper toggleable overlay with brief GUI explanations
 //   - replace color wheel png by a shader precomputed in setup
-//   - layers
+// PyGame to do list:
+//   - automatically place textures according to matrix values
 
 // Global variables
 // Inner logic
@@ -76,8 +78,6 @@ let nFixedColors = cPaletteFixed.length // Number of preselected colors
 let cPalette = [] // Holds all color palette data
 
 // Interactivity
-let prevx // Previous mouseX pos
-let prevy // Previous mouseY pos
 let uipx  = 30 // UI button length
 let uibc  = 80 // UI button color
 let uihc  = 200 // UI highlight color
@@ -94,6 +94,8 @@ let redoAble = false // Ctrl+shift key is being held down
 let cPick // Color picked from color wheel
 let cHover // Color under pointer from color wheel
 let cPicking = false // Currently picking a color using the color wheel
+let cPickedHolding = false // cPicking just turned false because of mouse press, currently holding down mouse button
+let clickedOnColor = false // On mouse click, some color from the palette was clicked
 let cPickingIndex = null // Index (cPalette) of color being currently picked
 let cSelectIndex // Index (cPalette) of currently selected color (set in setup, defaults to 1 if possible)
 let vMod = false // Currently modifying luminosity value on color wheel
@@ -221,7 +223,7 @@ function draw() {
       rect(xpx1, ypx1, s, s)
     }
   }
-  // Free draw tool
+  // Drawing tools
   freeDraw()
   
   // GUI display and interaction (except for mouseClicked and mouseReleased)
@@ -231,12 +233,10 @@ function draw() {
   drawColorWheel()
   updateHoverColor()
   
-  prevx = mouseX
-  prevy = mouseY
-  
+  // Console log
   if (frameCount == 1 || mod) {
     if (verbose) {
-      console.log(showMatrix(m))
+      console.log(showMatrix(m, type = null)) // 'np'))
       // console.log(showMatrix(getCurrentPalette()))
     } if (!undoredo) {
       cm++
@@ -247,8 +247,10 @@ function draw() {
     undoredo = false
     pxChange = false
   }
+  
   // GUIdebug()
   // gridDebug()
+  console.log(cPickedHolding)
 }
   
 
@@ -257,7 +259,7 @@ function showMatrix(m, type = null) {
   let rowText = ''
   let matrixText = '['
   if (type == 'np') {
-     matrixText = 'np.asarray(' + matrixText
+     matrixText = 'np.array(' + matrixText
   }
   for (let y = 0; y < m.length; y++) {
     for (let x = 0; x < m[0].length; x++) {
@@ -269,9 +271,9 @@ function showMatrix(m, type = null) {
     }
     if (type == 'np') {
       if (y == 0) {
-        matrixText += 'np.asarray(['+rowText+']),'
+        matrixText += 'np.array(['+rowText+']),'
       } else {
-        matrixText += '            np.asarray(['+rowText+']),'
+        matrixText += '          np.array(['+rowText+']),'
       }
     } else {
       if (y == 0) {
@@ -298,16 +300,14 @@ function updateZoom(min, max) {
   let zoomIn  = keyIsPressed && (key === '+')
   let zoomOut = keyIsPressed && (key === '-')
   if (zoomIn) {
-    // zoom += 0.1
     zoom *= 1.025
   } else if (zoomOut) {
-    // zoom -= 0.1
     zoom *= 0.975
   }
 
   if (mouseIsPressed) {
     if (mouseButton === CENTER) {
-      zoom -= 2*zoom*(mouseY-prevy)/h
+      zoom -= 2*zoom*(mouseY-pmouseY)/h
     }
   }
   
@@ -335,8 +335,8 @@ function updatePan() {
   
   if (mouseIsPressed) {
     if (mouseButton === RIGHT) {
-      hPan += (mouseX-prevx)/zoom
-      vPan += (mouseY-prevy)/zoom
+      hPan += (mouseX-pmouseX)/zoom
+      vPan += (mouseY-pmouseY)/zoom
     }
   }
   
@@ -574,24 +574,36 @@ function mouseClicked() {
   
   // Colors
   // Palette
+  clickedOnColor = false
   for (let valCol of cPalette) {
     let bx = valCol[3]
     let by = valCol[4]
     let i  = valCol[0] + nNeg
-    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2) {
-      if (mouseY > by - uipx/2 && mouseY < by + uipx/2) {
-        if (i == cSelectIndex) {
-          if (cPickingIndex != i) {
+    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2) {
+      clickedOnColor = true
+      if (i == cSelectIndex) {
+        if (!cPicking) {
+          if (!cPickedHolding) {
             cPickingIndex = i
             cPicking = true
           } else {
             cPickingIndex = null
-            cPicking = false
+            cPicking = false        
+            cPickedHolding = false
           }
-        }
+        } else {
+          cPickingIndex = null
+          cPicking = false
+        }         
+      } else {
+        cPickedHolding = false
+        cPickingIndex = null
+        cPicking = false
         cSelectIndex = i
       }
     }
+  } if (!clickedOnColor) {
+      cPickedHolding = false
   }
   // Wheel
   if (cPicking) {
@@ -785,6 +797,8 @@ function mouseHeldWheelInteraction() {
     } else if (!vMod) {
       if (!onWheel) {
         cPicking = false
+        cPickingIndex = null
+        cPickedHolding = true
       }
     }
   }
