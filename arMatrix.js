@@ -12,7 +12,6 @@
 //   - select -> copy/cut -> move tool
 //   - save/load/copy for js/numpy tool
 //   - better GUI feedback on hover and button press
-//   - helper toggleable overlay with brief GUI explanations
 //   - replace color wheel png by a shader precomputed in setup
 // PyGame to do list:
 //   - automatically place textures according to matrix values
@@ -24,7 +23,6 @@ let m     = [] // Matrix
 let mw    = 16 // Matrix width
 let mh    = 16 // Matrix height
 let dv    = 0 // Default matrix value
-// let prevm = [] // Previous frame matrix
 let mod   = false // m was modified during this frame
 let pxChange = false // m was modified on previous frames, while holding LMB
 let mHist = [] // Matrix history
@@ -82,6 +80,7 @@ let uipx  = 30 // UI button length
 let uibc  = 80 // UI button color
 let uihc  = 200 // UI highlight color
 let uipscl = 0.7 // Scale of palette buttons in relation to the rest of the buttons
+let uipxpscl = uipx*uipscl // Palette button length
 let undoredo = true // Undo or Redo was used during the previous frame
 let verbose = true // If true, prints m whenever a change is made to it
 let clickButtonArray = [[0, 0, undo, undoButton],
@@ -113,8 +112,13 @@ let cWheelw
 let cWheelh // Size (width and height) of GUI element (set in setup)
 let onPalette
 let onClickButtons
-let onWheel // Mouse currently on top of GUI element (set in mouseOnGUI())
+let onWheel 
+let onHelp // Mouse currently on top of GUI element (set in mouseOnGUI())
 let mouseIndex // Holds output from mousePosToMatrixIndex()
+let helping = false // Currently showing help overlay
+let helped = false // Was showing help overlay on previous frame
+let helpbx // help button x pos (set in setup)
+let helpby // help button y pos (set in setup)
 
 
 function preload() {
@@ -128,7 +132,7 @@ function setup() {
     element.addEventListener("contextmenu", (e) => e.preventDefault()) // Prevent context menu popup on right click
   }
   
-  w = constrain(windowWidth,  575, windowWidth)
+  w = constrain(windowWidth,  666, windowWidth)
   h = constrain(windowHeight, 500, windowHeight)
   noSmooth()
   createCanvas(w, h)
@@ -168,24 +172,26 @@ function setup() {
   i = 1
   for (let valCol of cPalette) {
     row = floor((i-1)/colorsPerRow)
-    valCol[3] = (uipx/1.25-uipx/2)+(i*2-1 - row*2*colorsPerRow)*uipx/1.25*uipscl
-    valCol[4] = (uipx/1.25-uipx/2)+(row*2+1)*uipx/1.25*uipscl // uipx/1.25
+    valCol[3] = (uipx/1.25-uipx/2+uipx/2*uipscl)+(i*2-2 - row*2*colorsPerRow)*uipx/1.25*uipscl
+    valCol[4] = (uipx/1.25-uipx/2+uipx/2*uipscl)+(row*2)*uipx/1.25*uipscl
     i++
   }
 
   cPaletteRows = floor(totColors/colorsPerRow)
-  cWx = cWd/1.725 + uipx/5
-  cWy = cWd/1.725 + uipx/5 + uipx/2 + 2*cPaletteRows*(uipx/1.25)*uipscl
-  
-  cPalettew = uipx/2 + 2*colorsPerRow*(uipx/1.25)*uipscl 
-  cPaletteh = uipx/2 + 2*cPaletteRows*(uipx/1.25)*uipscl
+  cPalettew = (uipx/1.25-uipx/2)+(colorsPerRow)*2*(uipx/1.25)*uipscl - (uipx/1.25-uipx/2)*uipscl
+  cPaletteh = (uipx/1.25-uipx/2)+(cPaletteRows)*2*(uipx/1.25)*uipscl
   clickButtonsw = 2*uipx/1.25
   clickButtonsh = nClickButtons*2*uipx/1.25
   cWheelw = cWd/8 + cWd*1.15
-  cWheelh = cWd/8 + cWd*1.4
+  cWheelh = cWd*1.4
+  cWx = cWd/1.725 + uipx/5
+  cWy = cWd/1.725 + cPaletteh
+  helpbx = uipx/1.25-uipx/2+uipx/2*0.7
+  helpby = height - uipx/1.25+uipx/2-uipx/2*0.7
   
   imageMode(CENTER)
   ellipseMode(CENTER)
+  rectMode(CENTER)
   
   mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()])
 }
@@ -204,7 +210,6 @@ function draw() {
   vPan = pan[1]
   hRef = (w-mwpx+s)/2 + hPan*zoom
   vRef = (h-mhpx+s)/2 + vPan*zoom
-  
   zFac = constrain(zoom, 0, 1)
   la   = lineca[1] * zFac**1.5
   
@@ -212,7 +217,6 @@ function draw() {
   mouseOnGUI()
   for (let y = 0; y < mh; y++) {
     for (let x = 0; x < mw; x++) {
-      
       xpx1 = hRef + x*s
       ypx1 = vRef + y*s
       xpx2 = xpx1 + s
@@ -229,9 +233,10 @@ function draw() {
   // GUI display and interaction (except for mouseClicked and mouseReleased)
   drawClickButtons()
   drawColorPalette()
-  mouseHeldWheelInteraction()
+  mouseHeldInteractions()
   drawColorWheel()
   updateHoverColor()
+  showHelp()
   
   // Console log
   if (frameCount == 1 || mod) {
@@ -247,7 +252,6 @@ function draw() {
     undoredo = false
     pxChange = false
   }
-  
   // GUIdebug()
   // gridDebug()
 }
@@ -310,6 +314,10 @@ function updateZoom(min, max) {
     }
   }
   
+  if (zoomIn || zoomOut){
+    helping = false
+  }
+  
   zoom = constrain(zoom, min, max)
   return zoom
 }
@@ -337,6 +345,10 @@ function updatePan() {
       hPan += (mouseX-pmouseX)/zoom
       vPan += (mouseY-pmouseY)/zoom
     }
+  }
+  
+  if (r || l || u || d){
+    helping = false
   }
   
   return [hPan, vPan]
@@ -504,6 +516,25 @@ function redoButton(x, y) {
 
 
 
+function helpButton(x, y) {
+  fill(bgc/2)
+  noStroke()
+  rect(x + uipx/10, y + uipx/10, uipx*0.7, uipx*0.7, uipx/10)
+  rectMode(CENTER)
+  noStroke()
+  fill(uibc)
+  rect(x, y, uipx*0.7, uipx*0.7, uipx/10)
+  fill(uihc)
+  textAlign(CENTER, CENTER)
+  textSize(uipx*0.7/1.25)
+  stroke(bgc/2, 150)
+  strokeWeight(uipx/10)
+  textFont('Georgia')
+  text('i', x, y+uipx/20)
+}
+
+
+
 function drawClickButtons() {
   for (let button of clickButtonArray) {
     let bx = button[0]
@@ -511,12 +542,12 @@ function drawClickButtons() {
     let draw = button[3]
     draw(bx, by)
   }
+  helpButton(helpbx, helpby)
 }
 
 
 
 function drawColorPalette() {
-  let uipxrscld = uipx*uipscl
   for (let valCol of cPalette) {
     let val = valCol[0]
     let col = valCol[2]
@@ -526,50 +557,145 @@ function drawColorPalette() {
     rectMode(CENTER)
     if (isSelected) {
       stroke(bgc)
-      strokeWeight(uipxrscld/15)
+      strokeWeight(uipxpscl/15)
       fill(uihc)
-      rect(bx, by, uipxrscld*1.3, uipxrscld*1.3, uipxrscld/6)
-      rect(bx, by+uipxrscld*1.4/1.65, uipxrscld*1.15/1.8, uipxrscld/6, uipxrscld/15)
+      rect(bx, by, uipxpscl*1.3, uipxpscl*1.3, uipxpscl/6)
+      rect(bx, by+uipxpscl*1.4/1.65, uipxpscl*1.15/1.8, uipxpscl/6, uipxpscl/15)
     } else {
       noStroke()
       fill(bgc/2)
-      rect(bx + uipx/10, by + uipx/10, uipxrscld, uipxrscld, uipxrscld/10)
+      rect(bx + uipx/10, by + uipx/10, uipxpscl, uipxpscl, uipxpscl/10)
     }
     noStroke()
     fill(col)
-    rect(bx, by, uipxrscld, uipxrscld, uipxrscld/10)
+    rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10)
     if ((col[0] + col[1] + col[2])/3 < 80) {
       fill(255, 40)//+80*()
     } else {
       fill(0, 50)
     }
-    rect(bx, by, uipxrscld, uipxrscld, uipxrscld/10)
+    rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10)
     fill(col)
-    rect(bx, by, uipxrscld/1.2, uipxrscld/1.2, uipxrscld/10)
+    rect(bx, by, uipxpscl/1.2, uipxpscl/1.2, uipxpscl/10)
     stroke(0, 100)
     strokeWeight(3)
     fill(255, 200)
-    textAlign(CENTER, CENTER);
-    textSize(uipxrscld/1.9)
+    textAlign(CENTER, CENTER)
+    textFont('sans-serif')
+    textSize(uipxpscl/1.9)
     text(val, bx, by)
   }
 }
 
 
 
+function showHelp() {
+  if (helping) {
+    background(bgc, 100)
+    textFont('helvetica')
+    textAlign(CENTER, CENTER)
+    fill(uihc-50)
+    stroke(uibc-50)
+    strokeWeight(3)
+    
+    rect(width/2, height/2, 50, 80, 30)
+    // fill(10,255,230)
+    fill(cPalette[cSelectIndex][2])
+    rect(width/2-12.5, height/2-20, 25, 40, 5)
+    fill(uihc-50)
+    rect(width/2+12.5, height/2-20, 25, 40, 5)
+    rect(width/2, height/2-10, 7, 20, 7)
+
+    rect(width/4, height/2-55, 17, 17, 5)
+    rect(width/4-17, height/2-55, 17, 17, 5)
+    rect(width/4+17, height/2-55, 17, 17, 5)
+    rect(width/4, height/2-72, 17, 17, 5)
+    fill(bgc/2)
+    triangle(width/4+0.25, height/2-55, width/4-0.25, height/2-55, width/4, height/2-55+0.35)
+    triangle(width/4+0.25, height/2-72, width/4-0.25, height/2-72, width/4, height/2-72-0.35)
+    triangle(width/4-17, height/2-55+0.25, width/4-17, height/2-55-0.25, width/4-17-0.35, height/2-55)
+    triangle(width/4+17, height/2-55+0.25, width/4+17, height/2-55-0.25, width/4+17+0.35, height/2-55)
+    fill(uihc-50)
+    rect(width/4, height/2, 50, 80, 30)
+    rect(width/4-12.5, height/2-20, 25, 40, 5)
+    // fill(10,255,230)
+    fill(cPalette[cSelectIndex][2])
+    rect(width/4+12.5, height/2-20, 25, 40, 5)
+    fill(uihc-50)
+    rect(width/4, height/2-10, 7, 20, 7)
+    
+    rect(3*width/4-14, height/2-57, 22, 22, 5)
+    rect(3*width/4+14, height/2-57, 22, 22, 5)
+    fill(bgc/2)
+    noStroke()
+    textSize(20)
+    textStyle(BOLD)
+    text('+', 3*width/4-14, height/2-57)
+    text('-', 3*width/4+14, height/2-57)
+    stroke(uibc-50)
+    fill(uihc-50)
+    rect(3*width/4, height/2, 50, 80, 30)
+    rect(3*width/4-12.5, height/2-20, 25, 40, 5)
+    rect(3*width/4+12.5, height/2-20, 25, 40, 5)
+    // fill(10,255,230)
+    fill(cPalette[cSelectIndex][2])
+    rect(3*width/4, height/2-10, 7, 20, 7)
+    fill(uihc-50)
+    
+    textStyle(BOLDITALIC)
+    textSize(25)
+    fill(uihc)
+    text('pan', width/4, height/2+60)
+    text('draw', width/2, height/2+60)
+    text('zoom', 3*width/4, height/2+60)
+    textSize(20)
+    textAlign(LEFT)
+    text('color palette', helpbx-uipx*0.35, cPaletteh+10)
+    textSize(15)
+    textStyle(ITALIC)
+    fill(uihc-50)
+    text('click on a color once to select it, twice to modify it', helpbx-uipx*0.35, cPaletteh+30) 
+    textAlign(CENTER, CENTER)
+    text('github.com/TomoBossi/ArMatrix', width/2, height-15)
+    textAlign(RIGHT)
+    textStyle(NORMAL)
+    textSize(11)
+    text('ctrl + z', w-2*uipx/1.25, clickButtonArray[0][1]+uipx/2.6)
+    text('ctrl + shift + z', w-2*uipx/1.25, clickButtonArray[1][1]+uipx/2.6)
+    textStyle(BOLDITALIC)
+    textSize(15)
+    fill(uihc)
+    text('undo', w-2*uipx/1.25, clickButtonArray[0][1])
+    text('redo', w-2*uipx/1.25, clickButtonArray[1][1])
+    text('recenter', w-2*uipx/1.25, clickButtonArray[2][1])
+    text('enhance', w-2*uipx/1.25, clickButtonArray[3][1])
+    textStyle(NORMAL)
+    textAlign(CENTER, CENTER)
+  }
+}
+
+
+
 function mouseClicked() {
-  // Buttons
+  // Clickable Buttons (upper right)
   for (let button of clickButtonArray) {
     let bx = button[0]
     let by = button[1]
     let func = button[2]
     let args = button[4]
-    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2) {
-      if (mouseY > by - uipx/2 && mouseY < by + uipx/2) {
-        func(args)
-      }
+    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2) {
+      func(args)
     }
   }
+  // Help button
+  if (helping) {
+    helping = false
+    helped = true
+  }
+  if (!helped && mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7) {
+    helping = true
+  } helped = false
+  
   
   // Colors
   // Palette
@@ -578,7 +704,7 @@ function mouseClicked() {
     let bx = valCol[3]
     let by = valCol[4]
     let i  = valCol[0] + nNeg
-    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2) {
+    if (mouseX > bx - uipxpscl/2 && mouseX < bx + uipxpscl/2 && mouseY > by - uipxpscl/2 && mouseY < by + uipxpscl/2) {
       clickedOnColor = true
       if (i == cSelectIndex) {
         if (!cPicking) {
@@ -721,17 +847,23 @@ function keyboardShortcuts() {
   if (keyIsDown(17)) {
     undoAble = true
     redoAble = false
+  } else {
+    undoAble = false
   } if (keyIsDown(17) && keyIsDown(16)) {
     undoAble = false    
     redoAble = true
+  } else {
+    redoAble = false
   }
 } function keyPressed() {
   if (keyCode === 90) {
     if (undoAble) {
       undo()
+      helping = false
     } 
     if (redoAble) {
       redo()
+      helping = false
     }
   }
 }
@@ -743,8 +875,9 @@ function mouseOnGUI() {
   onPalette      = mouseX < cPalettew && mouseY < cPaletteh
   onClickButtons = mouseX > (width - clickButtonsw) && mouseY < clickButtonsh 
   onWheel        = mouseX < cWheelw && mouseY < cPaletteh + cWheelh && mouseY > cPaletteh
+  onHelp         = mouseX < helpbx*2 && mouseY > 2*helpby - height
   if (mouseIsPressed) {
-    if (onPalette || onClickButtons || (cPicking && onWheel) || vMod) {
+    if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod) {
       onGUI = true
     }
   }
@@ -754,6 +887,8 @@ function mouseOnGUI() {
 
 function GUIdebug() {
   fill(255, 30)
+  stroke(0, 100)
+  strokeWeight(2)
   rectMode(CORNER)
   
   // cPalette
@@ -766,11 +901,18 @@ function GUIdebug() {
   if (cPicking) {
     rect(0, cPaletteh, cWheelw, cWheelh)
   }
+  
+  // Help
+  rect(0, 2*helpby - height, 2*helpbx, 2*helpby)
+  rectMode(CENTER)
 }
 
 
 
 function gridDebug() {
+  fill(200)
+  stroke(0, 100)
+  strokeWeight(2)
   ellipse(hRef - s/2,          vRef - s/2,          10, 10) 
   ellipse(hRef - s/2,          vRef - s/2 + s*mh,   10, 10)
   ellipse(hRef - s/2 + s*mw,   vRef - s/2,          10, 10)
@@ -788,8 +930,9 @@ function mousePosToMatrixIndex() {
 
 
 
-function mouseHeldWheelInteraction() {
-  if (cPicking && mouseIsPressed) {
+function mouseHeldInteractions() {
+  // Wheel
+  if (cPicking && mouseIsPressed && mouseButton == LEFT) {
     if (vMod || ((mouseX > cWx-cWd/2-cWd/40 && mouseX < cWx+cWd/2+cWd/40) && (mouseY > cWy + cWd/1.8 && mouseY < cWy + cWd/1.3))) {
       v = constrain(map(mouseX, cWx-cWd/2, cWx+cWd/2, 0, 1), 0, 1)
       vMod = true
@@ -800,6 +943,10 @@ function mouseHeldWheelInteraction() {
         cPickedHolding = true
       }
     }
+  }
+  // Help
+  if (!onGUI && mouseIsPressed && (mouseButton == LEFT || mouseButton == RIGHT || mouseButton == CENTER)) {
+    helping = false
   }
 }
 
@@ -812,6 +959,7 @@ function freeDraw() {
     y = mouseIndex[1]
     if (mouseIndex[2]) { // Mouse pointer is on top of grid
       if (!onGUI) {
+        helping = false
         if (m[y][x] != cSelectIndex - nNeg) {
           pxChange = true
           m[y][x] = cSelectIndex - nNeg
