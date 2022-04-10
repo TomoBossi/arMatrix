@@ -10,7 +10,7 @@
 //   - fill tool (change all neighboring pixels of same value at once)
 //   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
-//   - save/load/copy for js/numpy tool
+//   - save as png, copy matrix to clipboard, copy matrix to clipboard numpy mode buttons
 //   - better GUI feedback on hover and button press
 //   - replace color wheel png by a shader precomputed in setup
 // PyGame to do list:
@@ -187,7 +187,7 @@ function setup() {
   cWx = cWd/1.725 + uipx/5
   cWy = cWd/1.725 + cPaletteh
   helpbx = uipx/1.25-uipx/2+uipx/2*0.7
-  helpby = height - uipx/1.25+uipx/2-uipx/2*0.7
+  helpby = h - uipx/1.25+uipx/2-uipx/2*0.7
   
   imageMode(CENTER)
   ellipseMode(CENTER)
@@ -598,56 +598,56 @@ function showHelp() {
     stroke(uibc-50)
     strokeWeight(3)
     
-    rect(width/2, height/2, 50, 80, 30)
+    rect(w/2, h/2, 50, 80, 30)
     // fill(10,255,230)
     fill(cPalette[cSelectIndex][2])
-    rect(width/2-12.5, height/2-20, 25, 40, 5)
+    rect(w/2-12.5, h/2-20, 25, 40, 5)
     fill(uihc-50)
-    rect(width/2+12.5, height/2-20, 25, 40, 5)
-    rect(width/2, height/2-10, 7, 20, 7)
+    rect(w/2+12.5, h/2-20, 25, 40, 5)
+    rect(w/2, h/2-10, 7, 20, 7)
 
-    rect(width/4, height/2-55, 17, 17, 5)
-    rect(width/4-17, height/2-55, 17, 17, 5)
-    rect(width/4+17, height/2-55, 17, 17, 5)
-    rect(width/4, height/2-72, 17, 17, 5)
+    rect(w/2-100, h/2-55, 17, 17, 5)
+    rect(w/2-100-17, h/2-55, 17, 17, 5)
+    rect(w/2-100+17, h/2-55, 17, 17, 5)
+    rect(w/2-100, h/2-72, 17, 17, 5)
     fill(bgc/2)
-    triangle(width/4+0.25, height/2-55, width/4-0.25, height/2-55, width/4, height/2-55+0.35)
-    triangle(width/4+0.25, height/2-72, width/4-0.25, height/2-72, width/4, height/2-72-0.35)
-    triangle(width/4-17, height/2-55+0.25, width/4-17, height/2-55-0.25, width/4-17-0.35, height/2-55)
-    triangle(width/4+17, height/2-55+0.25, width/4+17, height/2-55-0.25, width/4+17+0.35, height/2-55)
+    triangle(w/2-100+0.25, h/2-55, w/2-100-0.25, h/2-55, w/2-100, h/2-55+0.35)
+    triangle(w/2-100+0.25, h/2-72, w/2-100-0.25, h/2-72, w/2-100, h/2-72-0.35)
+    triangle(w/2-100-17, h/2-55+0.25, w/2-100-17, h/2-55-0.25, w/2-100-17-0.35, h/2-55)
+    triangle(w/2-100+17, h/2-55+0.25, w/2-100+17, h/2-55-0.25, w/2-100+17+0.35, h/2-55)
     fill(uihc-50)
-    rect(width/4, height/2, 50, 80, 30)
-    rect(width/4-12.5, height/2-20, 25, 40, 5)
+    rect(w/2-100, h/2, 50, 80, 30)
+    rect(w/2-100-12.5, h/2-20, 25, 40, 5)
     // fill(10,255,230)
     fill(cPalette[cSelectIndex][2])
-    rect(width/4+12.5, height/2-20, 25, 40, 5)
+    rect(w/2-100+12.5, h/2-20, 25, 40, 5)
     fill(uihc-50)
-    rect(width/4, height/2-10, 7, 20, 7)
+    rect(w/2-100, h/2-10, 7, 20, 7)
     
-    rect(3*width/4-14, height/2-57, 22, 22, 5)
-    rect(3*width/4+14, height/2-57, 22, 22, 5)
+    rect(w/2+100-14, h/2-57, 22, 22, 5)
+    rect(w/2+100+14, h/2-57, 22, 22, 5)
     fill(bgc/2)
     noStroke()
     textSize(20)
     textStyle(BOLD)
-    text('+', 3*width/4-14, height/2-57)
-    text('-', 3*width/4+14, height/2-57)
+    text('+', w/2+100-14, h/2-57)
+    text('-', w/2+100+14, h/2-57)
     stroke(uibc-50)
     fill(uihc-50)
-    rect(3*width/4, height/2, 50, 80, 30)
-    rect(3*width/4-12.5, height/2-20, 25, 40, 5)
-    rect(3*width/4+12.5, height/2-20, 25, 40, 5)
+    rect(w/2+100, h/2, 50, 80, 30)
+    rect(w/2+100-12.5, h/2-20, 25, 40, 5)
+    rect(w/2+100+12.5, h/2-20, 25, 40, 5)
     // fill(10,255,230)
     fill(cPalette[cSelectIndex][2])
-    rect(3*width/4, height/2-10, 7, 20, 7)
+    rect(w/2+100, h/2-10, 7, 20, 7)
     fill(uihc-50)
     
     textStyle(BOLDITALIC)
     textSize(25)
     fill(uihc)
-    text('pan', width/4, height/2+60)
-    text('draw', width/2, height/2+60)
-    text('zoom', 3*width/4, height/2+60)
+    text('pan', w/2-100, h/2+60)
+    text('draw', w/2, h/2+60)
+    text('zoom', w/2+100, h/2+60)
     textSize(20)
     textAlign(LEFT)
     text('color palette', helpbx-uipx*0.35, cPaletteh+10)
@@ -656,7 +656,7 @@ function showHelp() {
     fill(uihc-50)
     text('click on a color once to select it, twice to modify it', helpbx-uipx*0.35, cPaletteh+30) 
     textAlign(CENTER, CENTER)
-    text('github.com/TomoBossi/ArMatrix', width/2, height-15)
+    text('github.com/TomoBossi/ArMatrix', w/2, h-15)
     textAlign(RIGHT)
     textStyle(NORMAL)
     textSize(11)
@@ -733,7 +733,7 @@ function mouseClicked() {
   // Wheel
   if (cPicking) {
     if (dist(mouseX, mouseY, cWx, cWy) < cWd/2) {
-      pxIndex = (mouseY * width + mouseX) * pxd * 4
+      pxIndex = (mouseY * w + mouseX) * pxd * 4
       loadPixels()
       cPick = [pixels[pxIndex],
                pixels[pxIndex + 1],
@@ -803,7 +803,7 @@ function drawColorWheel() {
 function updateHoverColor() {
   if (cPicking) {
     if (dist(mouseX, mouseY, cWx, cWy) < cWd/2) {
-      pxIndex = (mouseY * width + mouseX) * pxd * 4
+      pxIndex = (mouseY * w + mouseX) * pxd * 4
       loadPixels()
       cHover = [pixels[pxIndex],
                 pixels[pxIndex + 1],
@@ -873,9 +873,9 @@ function keyboardShortcuts() {
 function mouseOnGUI() {
   onGUI = false
   onPalette      = mouseX < cPalettew && mouseY < cPaletteh
-  onClickButtons = mouseX > (width - clickButtonsw) && mouseY < clickButtonsh 
+  onClickButtons = mouseX > (w - clickButtonsw) && mouseY < clickButtonsh 
   onWheel        = mouseX < cWheelw && mouseY < cPaletteh + cWheelh && mouseY > cPaletteh
-  onHelp         = mouseX < helpbx*2 && mouseY > 2*helpby - height
+  onHelp         = mouseX < helpbx*2 && mouseY > 2*helpby - h
   if (mouseIsPressed) {
     if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod) {
       onGUI = true
@@ -895,7 +895,7 @@ function GUIdebug() {
   rect(0, 0, cPalettew, cPaletteh)
   
   // Tools (upper right)
-  rect(width - clickButtonsw, 0, clickButtonsw, clickButtonsh)
+  rect(w - clickButtonsw, 0, clickButtonsw, clickButtonsh)
   
   // Color wheel
   if (cPicking) {
@@ -903,7 +903,7 @@ function GUIdebug() {
   }
   
   // Help
-  rect(0, 2*helpby - height, 2*helpbx, 2*helpby)
+  rect(0, 2*helpby - h, 2*helpbx, 2*helpby)
   rectMode(CENTER)
 }
 
