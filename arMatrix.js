@@ -14,7 +14,69 @@
 //   - better GUI feedback on hover and button press
 //   - replace color wheel png by a shader precomputed in setup
 // PyGame to do list:
-//   - automatically place textures according to matrix values
+//   - Make each pixel 4 triangles so diagonals are allowed (no longer pixel art though)
+//   - automatically place randomized textures according to matrix values
+
+// Preloaded data
+let loadM = []
+let loadC = []
+// loadM = [
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1, 12, 12, 12,  6,  6,  6,  6,  1,  1,  1,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  6,  6, 12, 11, 12,  6,  6,  6,  6,  6,  6,  1,  1,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  6, 12,  8, 12,  6,  6,  6,  6,  6,  6,  7,  1,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  8,  8,  8,  8,  8,  8,  8,  6,  6,  6,  6,  8,  7,  1,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  6,  6,  6,  6,  6,  7,  1,  1,  1,  1,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  2,  6,  6,  8,  7,  1,  5,  5,  1,  1,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  6,  6,  6,  8,  7,  1,  5,  9,  9,  1,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  6,  2,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  8,  7,  1,  5,  9,  4,  1,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  2,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  8,  7,  1,  5,  9,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  2,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  8,  7,  1,  5,  9,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  6,  6,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  7,  7,  1,  5,  9,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  6,  8,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  1,  1,  5,  9,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  8,  7,  7,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  5,  9,  4,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  8,  7,  1,  1,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  9,  4,  4,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  8,  7,  1,  5,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  4,  4, 10,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  8,  7,  1,  9,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4, 10,  4,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  6,  6,  8,  7,  1,  4,  4, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,  4,  4,  4,  4,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  6,  8,  7,  1,  4, 10,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  1,  1,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  8,  8,  7,  1,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  1,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  7,  7,  1,  4, 10,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  1,  1,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  4,  4,  4,  4,  4,  4,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  4, 10,  4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  5,  1,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  4,  4, 10,  4,  4,  4,  9,  9,  5,  9,  9,  9,  9,  1,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  4,  4,  4,  4,  4,  4,  9,  3,  9,  4,  4,  1,  1,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  4,  4,  4,  4,  9,  9,  9,  1,  1,  1,  0,  0,  0,  0,  0,  0,],
+// [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,],] 
+// loadC = [
+// [  0, [  35,  35,  35,]],
+// [  1, [   0,   0,   0,]],
+// [  2, [ 255, 236,  84,]],
+// [  3, [ 180, 255, 251,]],
+// [  4, [  69, 128, 216,]],
+// [  5, [  61,  70, 231,]],
+// [  6, [ 216, 199,  31,]],
+// [  7, [ 161,  54,   8,]],
+// [  8, [ 216, 139,  96,]],
+// [  9, [  48, 111, 231,]],
+// [ 10, [ 113, 146, 231,]],
+// [ 11, [ 254, 246, 233,]],
+// [ 12, [ 201, 172,  71,]],]
 
 // Global variables
 // Inner logic
@@ -86,7 +148,9 @@ let verbose = true // If true, prints m whenever a change is made to it
 let clickButtonArray = [[0, 0, undo, undoButton],
                         [0, 0, redo, redoButton],
                         [0, 0, reCenter, reCenterButton],
-                        [0, 0, enlargeMatrix, enlargeMatrixButton, 2],] // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs]] (set in setup)
+                        [0, 0, enlargeMatrix, enlargeMatrixButton, 2],]
+                        //[0, 0, saveToClipboard, saveButton],]
+                        //[0, 0, loadFromClipboard, loadButton],] // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs]] (set in setup)
 let nClickButtons = clickButtonArray.length // Number of clickable buttons
 let undoAble = false // Ctrl key is being held down
 let redoAble = false // Ctrl+shift key is being held down
@@ -99,7 +163,7 @@ let cPickingIndex = null // Index (cPalette) of color being currently picked
 let cSelectIndex // Index (cPalette) of currently selected color (set in setup, defaults to 1 if possible)
 let vMod = false // Currently modifying luminosity value on color wheel
 let pxIndex // Index of current pixel while hovering over color wheel
-let v = 0.8 // luminosity value
+let v = 0.8 // Luminosity value
 let cWx // Color wheel x pos (set in setup)
 let cWy // Color wheel y pos (set in setup)
 let cWd = uipx*4 // Color wheel diameter
@@ -117,8 +181,9 @@ let onHelp // Mouse currently on top of GUI element (set in mouseOnGUI())
 let mouseIndex // Holds output from mousePosToMatrixIndex()
 let helping = false // Currently showing help overlay
 let helped = false // Was showing help overlay on previous frame
-let helpbx // help button x pos (set in setup)
-let helpby // help button y pos (set in setup)
+let helpbx // Help button x pos (set in setup)
+let helpby // Help button y pos (set in setup)
+
 
 
 function preload() {
@@ -142,6 +207,9 @@ function setup() {
       m[y][x] = dv
     }
   }
+  
+  // Load matrix
+  loadMatrix()
   
   s    = pxwh*zoom
   mwpx = s*mw
@@ -177,6 +245,9 @@ function setup() {
     i++
   }
 
+  // Load color palette
+  loadColors()
+  
   cPaletteRows = floor(totColors/colorsPerRow)
   cPalettew = (uipx/1.25-uipx/2)+(colorsPerRow)*2*(uipx/1.25)*uipscl - (uipx/1.25-uipx/2)*uipscl
   cPaletteh = (uipx/1.25-uipx/2)+(cPaletteRows)*2*(uipx/1.25)*uipscl
@@ -241,8 +312,7 @@ function draw() {
   // Console log
   if (frameCount == 1 || mod) {
     if (verbose) {
-      console.log(showMatrix(m, type = null)) // 'np'))
-      // console.log(showMatrix(getCurrentPalette()))
+      console.log(showMatrix(m, type = null)+'\n'+showColors(getCurrentPalette()))
     } if (!undoredo) {
       cm++
       mHist = mHist.slice(0, cm)
@@ -260,9 +330,9 @@ function draw() {
   
 function showMatrix(m, type = null) {
   let rowText = ''
-  let matrixText = '['
+  let matrixText = 'loadM = [\n'
   if (type == 'np') {
-     matrixText = 'np.array(' + matrixText
+     matrixText = 'loadM = np.array([\n'
   }
   for (let y = 0; y < m.length; y++) {
     for (let x = 0; x < m[0].length; x++) {
@@ -273,17 +343,9 @@ function showMatrix(m, type = null) {
       }
     }
     if (type == 'np') {
-      if (y == 0) {
-        matrixText += 'np.array(['+rowText+']),'
-      } else {
-        matrixText += '          np.array(['+rowText+']),'
-      }
+      matrixText += 'np.array(['+rowText+']),'
     } else {
-      if (y == 0) {
-        matrixText += '['+rowText+'],'
-      } else {
-        matrixText +=' ['+rowText+'],'
-      }
+      matrixText += '['+rowText+'],'
     }
     if (y != m.length-1) {
       matrixText += '\n'
@@ -298,6 +360,32 @@ function showMatrix(m, type = null) {
 }
   
   
+function showColors() {
+  let colorsText = 'loadC = [\n'
+  for (let colNum of Array.from({length: totColors}, (x, i) => i - nNeg)) {
+    if (isIn2Darray(colNum, m)) {
+      for (let currentC of cPalette) {
+        if (currentC[0] == colNum) {
+          let rowText = ''
+          if (colNum > -1 && colNum < 10) {
+            rowText += '[  ' +colNum+', ['
+          } else {
+            rowText += '[ '+colNum+', ['
+          }
+          for (let colRGB of currentC[2]) {
+            rowText += ' '.repeat(3 - int(colRGB>=10) - int(colRGB>=100))+round(colRGB) +','
+          }
+          rowText += ']],\n'
+          colorsText += rowText
+        }
+      }
+    }
+  }
+  colorsText = colorsText.slice(0,colorsText.length-1)+']'
+  return colorsText
+}
+
+
   
 function updateZoom(min, max) {
   let zoomIn  = keyIsPressed && (key === '+')
@@ -971,16 +1059,43 @@ function freeDraw() {
 
 
 
+function isIn2Darray(elem, array) {
+  for (let y = 0; y < array.length; y++) {
+    for (let x = 0; x < array[0].length; x++) {
+      if (array[y][x] == elem) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 
 
+function loadMatrix() {
+  if (loadM.length) {
+    m = loadM
+    mw = m[0].length 
+    mh = m.length
+  }
+}
 
 
 
-
-
-
-
+function loadColors() {
+  if (loadC.length) {
+    for (let c of loadC) {
+      loadColNum = c[0]
+      loadCol    = c[1]
+      for (let currentC of cPalette) {
+        if (currentC[0] == loadColNum) {
+          currentC[1] = loadCol
+          currentC[2] = loadCol
+        }
+      }
+    }
+  }
+}
 
 
 
