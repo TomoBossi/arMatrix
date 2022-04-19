@@ -10,4 +10,4 @@ I got carried away and ended up making a kind-of-usable although very primitive 
 
 ArMatrix not because of my forever throbbing and almost insufferable argentinian pride, but because you are meant to (ar)mar tu (matriz).
 
-Developed on Firefox 98.0.2 using p5.js 1.4.1, tested on Firefox 98.0.2 and Chromium 100.0.4896.127 for Manjaro Linux.
+Developed on Firefox 98.0.2 using p5.js 1.4.1, tested on Firefox 98.0.2 and Chromium 100.0.4896.127 for Manjaro Linux. Does not work on mobile.
