@@ -162,6 +162,7 @@ let cPalette = [] // Holds all color palette data
 let uipx  = 30 // UI button length
 let uibc  = 80 // UI button color
 let uihc  = 200 // UI highlight color
+let uihcoff = uihc*3/4 // UI highlight color (tool disabled, uihcoff < uihc)
 let uipscl = 0.7 // Scale of palette buttons in relation to the rest of the buttons
 let uipxpscl = uipx*uipscl // Palette button length
 let undoredo = true // Undo or Redo was used during the previous frame
@@ -592,32 +593,42 @@ function upScaleButton(x, y) {
 
 
 function undoButton(x, y) {
+  if (cm == 0) {
+    hcFillValue = uihcoff
+  } else{
+    hcFillValue = uihc
+  }
   fill(bgc/2)
   noStroke()
   rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10)
   baseButton(x, y, uibc)
-  fill(uihc)
+  fill(hcFillValue)
   ellipse(x, y, uipx*1.8/3)
   fill(uibc)
   ellipse(x, y, uipx*1.4/3)
   rect(x-uipx/4.5, y-uipx/4.5, uipx/2.25)
-  fill(uihc)
+  fill(hcFillValue)
   triangle(x, y-0.85*uipx/2.25, x, y-0.35*uipx/2.25, x-uipx/6, y-0.6*uipx/2.25)
 }
 
 
 
 function redoButton(x, y) {
+  if (cm == mHist.length-1) {
+    hcFillValue = uihcoff
+  } else{
+    hcFillValue = uihc
+  }
   fill(bgc/2)
   noStroke()
   rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10)
   baseButton(x, y, uibc)
-  fill(uihc)
+  fill(hcFillValue)
   ellipse(x, y, uipx*1.8/3)
   fill(uibc)
   ellipse(x, y, uipx*1.4/3)
   rect(x+uipx/4.5, y-uipx/4.5, uipx/2.25)
-  fill(uihc)
+  fill(hcFillValue)
   triangle(x, y-0.85*uipx/2.25, x, y-0.35*uipx/2.25, x+uipx/6, y-0.6*uipx/2.25)
 }
 
