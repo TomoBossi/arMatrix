@@ -5,7 +5,6 @@
 // Useful for creating 2D pixel art textures and for 2D game level design
 // 2D matrices could be of any given size/dimensions
 // To do list:
-//   - [0-9] numeric shortcuts
 //   - highlight corresponding color in color palete when hovering on pixel (and/or inverse)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
@@ -320,7 +319,7 @@ function draw() {
   // Drawing tools
   freeDraw()
   
-  // GUI display and interaction (except for mouseClicked and mouseReleased)
+  // GUI display and interaction (except for mouseClicked, mouseReleased and keyboard shortcuts)
   drawClickButtons()
   drawColorPalette()
   mouseHeldInteractions()
@@ -983,6 +982,11 @@ function keyboardShortcuts() {
   } if (keyCode === 67) {
     reCenter()
     helping = false
+  } for (let i = 48; i <= 57; i++) {
+    if (keyCode === i) {
+      cPicking = false
+      cSelectIndex  = i-48+nNeg
+    }
   }
 }
 
