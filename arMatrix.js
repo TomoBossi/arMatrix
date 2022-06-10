@@ -5,6 +5,8 @@
 // Useful for creating 2D pixel art textures and for 2D game level design
 // 2D matrices could be of any given size/dimensions
 // To do list:
+//   - [0-9] numeric shortcuts
+//   - highlight corresponding color in color palete when hovering on pixel (and/or inverse)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
 //   - fill tool (change all neighboring pixels of same value at once)
@@ -13,6 +15,7 @@
 //   - save as png, copy matrix to clipboard, copy matrix to clipboard numpy mode buttons
 //   - better GUI feedback on hover and button press
 //   - replace color wheel png by a shader precomputed in setup
+//   - hue shifting, somehow
 // PyGame to do list:
 //   - Make each pixel 4 triangles so diagonals are allowed (no longer pixel art though)
 //   - automatically place randomized textures according to matrix values
@@ -215,7 +218,7 @@ function setup() {
   
   w = constrain(windowWidth,  666, windowWidth)
   h = constrain(windowHeight, 500, windowHeight)
-  noSmooth()
+  smooth()
   createCanvas(w, h)
   for (let y = 0; y < mh; y++) {
     m[y] = []
@@ -673,8 +676,8 @@ function drawColorPalette() {
     noStroke()
     fill(col)
     rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10)
-    if ((col[0] + col[1] + col[2])/3 < 80) {
-      fill(255, 40)//+80*()
+    if ((col[0] + col[1] + col[2])/3 < 60) {
+      fill(255, 50)//+80*()
     } else {
       fill(0, 50)
     }
@@ -682,8 +685,8 @@ function drawColorPalette() {
     fill(col)
     rect(bx, by, uipxpscl/1.2, uipxpscl/1.2, uipxpscl/10)
     stroke(0, 100)
-    strokeWeight(3)
-    fill(255, 200)
+    strokeWeight(2.5)
+    fill(255, 150)
     textAlign(CENTER, CENTER)
     textFont('sans-serif')
     textSize(uipxpscl/1.9)
@@ -704,7 +707,8 @@ function showHelp() {
     
     rect(w/2, h/2, 50, 80, 30)
     // fill(10,255,230)
-    fill(cPalette[cSelectIndex][2])
+    // fill(cPalette[cSelectIndex][2])
+    fill(uihc+20)
     rect(w/2-12.5, h/2-20, 25, 40, 5)
     fill(uihc-50)
     rect(w/2+12.5, h/2-20, 25, 40, 5)
@@ -723,7 +727,8 @@ function showHelp() {
     rect(w/2-100, h/2, 50, 80, 30)
     rect(w/2-100-12.5, h/2-20, 25, 40, 5)
     // fill(10,255,230)
-    fill(cPalette[cSelectIndex][2])
+    // fill(cPalette[cSelectIndex][2])
+    fill(uihc+20)
     rect(w/2-100+12.5, h/2-20, 25, 40, 5)
     fill(uihc-50)
     rect(w/2-100, h/2-10, 7, 20, 7)
@@ -742,7 +747,8 @@ function showHelp() {
     rect(w/2+100-12.5, h/2-20, 25, 40, 5)
     rect(w/2+100+12.5, h/2-20, 25, 40, 5)
     // fill(10,255,230)
-    fill(cPalette[cSelectIndex][2])
+    // fill(cPalette[cSelectIndex][2])
+    fill(uihc+20)
     rect(w/2+100, h/2-10, 7, 20, 7)
     fill(uihc-50)
     
@@ -836,7 +842,7 @@ function mouseClicked() {
   }
   // Wheel
   if (cPicking) {
-    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2) {
+    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2-1) {
       pxIndex = (mouseY * w + mouseX) * pxd * 4
       loadPixels()
       cPick = [pixels[pxIndex],
@@ -888,10 +894,13 @@ function drawColorWheel() {
     fill(uibc-30)
     rect(cWx, cWy + cWd/8, cWd*1.15, cWd*1.4, cWd/8)
     rectMode(CORNER)
-    fill(uihc)
-    ellipse(cWx, cWy, cWd*21/20)
     tint(255*v)
     image(cWheel, cWx, cWy, cWd, cWd)
+    noFill()
+    stroke(uihc)
+    strokeWeight(2)
+    ellipse(cWx, cWy, cWd)
+    noStroke()
     fill(uihc-50)
     rect(cWx-cWd/2, cWy + cWd/1.55 - cWd/160, cWd*v, cWd/80, cWd/80)
     fill(uibc)
@@ -906,7 +915,7 @@ function drawColorWheel() {
 
 function updateHoverColor() {
   if (cPicking) {
-    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2) {
+    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2-1) {
       pxIndex = (mouseY * w + mouseX) * pxd * 4
       loadPixels()
       cHover = [pixels[pxIndex],
