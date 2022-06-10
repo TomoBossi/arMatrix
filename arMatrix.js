@@ -772,6 +772,7 @@ function showHelp() {
     textSize(11)
     text('ctrl + z', w-2*uipx/1.25, clickButtonArray[0][1]+uipx/2.6)
     text('ctrl + shift + z', w-2*uipx/1.25, clickButtonArray[1][1]+uipx/2.6)
+    text('c', w-2*uipx/1.25, clickButtonArray[2][1]+uipx/2.6)
     textStyle(BOLDITALIC)
     textSize(15)
     fill(uihc)
@@ -957,6 +958,7 @@ function setPalette(p) {
 
 
 function keyboardShortcuts() {
+  // https://www.toptal.com/developers/keycode
   if (keyIsDown(17)) {
     undoAble = true
     redoAble = false
@@ -978,6 +980,9 @@ function keyboardShortcuts() {
       redo()
       helping = false
     }
+  } if (keyCode === 67) {
+    reCenter()
+    helping = false
   }
 }
 
