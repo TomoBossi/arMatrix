@@ -11,7 +11,7 @@
 //   - fill tool (change all neighboring pixels of same value at once)
 //   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
-//   - save as png, copy matrix to clipboard, copy matrix to clipboard numpy mode buttons
+//   - save as png, copy matrix to clipboard (https://editor.p5js.org/jeandenis/sketches/FuI7_RhOH), save matrix text file, load matrix text file
 //   - better GUI feedback on hover and button press
 //   - replace color wheel png by a shader precomputed in setup
 //   - hue shifting, somehow
@@ -971,18 +971,16 @@ function keyboardShortcuts() {
     redoAble = false
   }
 } function keyPressed() {
+  helping = false
   if (keyCode === 90) {
     if (undoAble) {
       undo()
-      helping = false
     } 
     if (redoAble) {
       redo()
-      helping = false
     }
   } if (keyCode === 67) {
     reCenter()
-    helping = false
   } for (let i = 48; i <= 57; i++) {
     if (keyCode === i) {
       cPicking = false
