@@ -163,6 +163,7 @@ let uipx  = 30 // UI button length
 let uibc  = 80 // UI button color
 let uihc  = 200 // UI highlight color
 let uihcoff = uihc*3/4 // UI highlight color (tool disabled, uihcoff < uihc)
+let hcFillValue // Placeholder variable for either uihc or uihcoff, accordingly
 let uipscl = 0.7 // Scale of palette buttons in relation to the rest of the buttons
 let uipxpscl = uipx*uipscl // Palette button length
 let undoredo = true // Undo or Redo was used during the previous frame
