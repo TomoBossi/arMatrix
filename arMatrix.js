@@ -1,9 +1,3 @@
-// Developed and tested on Firefox 98.0.2 for Manjaro Linux, running p5js 1.4.1
-// To be implemented using PyGame
-
-// Planned functionality: GUI for very easily creating and modifying 2D matrices
-// Useful for creating 2D pixel art textures and for 2D game level design
-// 2D matrices could be of any given size/dimensions
 // To do list:
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
@@ -11,14 +5,10 @@
 //   - fill tool (change all neighboring pixels of same value at once)
 //   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
-//   - save as png, copy matrix to clipboard (https://editor.p5js.org/jeandenis/sketches/FuI7_RhOH), save matrix text file, load matrix text file
-//   - better GUI feedback on hover and button press
+//   - save as png, copy matrix to clipboard (https://openprocessing.org/sketch/1034949/, https://editor.p5js.org/olafval/sketches/vmclfZbIB, https://editor.p5js.org/jeandenis/sketches/FuI7_RhOH), save matrix text file, load matrix text file
 //   - replace color wheel png by a shader precomputed in setup
 //   - hue shifting, somehow
-//   - optimize display to lower amount of rectangles and/or lines, if at all possible.
-// PyGame to do list:
-//   - Make each pixel 4 triangles so diagonals are allowed (no longer pixel art though)
-//   - automatically place randomized textures according to matrix values
+//   - optimize display to lower amount of rectangles and/or lines, if at all possible
 
 // Preloaded data
 let loadM = []
