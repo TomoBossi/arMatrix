@@ -777,9 +777,9 @@ function showHelp() {
     textAlign(RIGHT)
     textStyle(NORMAL)
     textSize(11)
-    text('ctrl + z', w-2*uipx/1.25, clickButtonArray[0][1]+uipx/2.6)
-    text('ctrl + shift + z', w-2*uipx/1.25, clickButtonArray[1][1]+uipx/2.6)
-    text('c', w-2*uipx/1.25, clickButtonArray[2][1]+uipx/2.6)
+    text('ctrl + Z', w-2*uipx/1.25, clickButtonArray[0][1]+uipx/2.25)
+    text('ctrl + shift + Z', w-2*uipx/1.25, clickButtonArray[1][1]+uipx/2.25)
+    text('R', w-2*uipx/1.25, clickButtonArray[2][1]+uipx/2.25)
     textStyle(BOLDITALIC)
     textSize(15)
     fill(uihc)
@@ -978,20 +978,24 @@ function keyboardShortcuts() {
     redoAble = false
   }
 } function keyPressed() {
-  helping = false
-  if (keyCode === 90) {
-    if (undoAble) {
-      undo()
-    } 
-    if (redoAble) {
-      redo()
-    }
-  } if (keyCode === 67) {
-    reCenter()
-  } for (let i = 48; i <= 57; i++) {
-    if (keyCode === i) {
-      cPicking = false
-      cSelectIndex  = i-48+nNeg
+  if (keyCode === 73) {
+    helping = !helping
+  } else {
+    helping = false
+    if (keyCode === 90) {
+      if (undoAble) {
+        undo()
+      } 
+      if (redoAble) {
+        redo()
+      }
+    } if (keyCode === 82) {
+      reCenter()
+    } for (let i = 48; i <= 57; i++) {
+      if (keyCode === i) {
+        cPicking = false
+        cSelectIndex  = i-48+nNeg
+      }
     }
   }
 }
