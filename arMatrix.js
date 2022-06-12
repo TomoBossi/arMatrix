@@ -993,16 +993,16 @@ function keyboardShortcuts() {
     } for (let i = 48; i <= 57; i++) {
       if (keyCode === i) {
         cPicking = false
-        cSelectIndex  = i-48+nNeg
+        cSelectIndex = i-48+nNeg
       }
     } if (keyCode === 81) {
+      cPicking = false
       if (cSelectIndex > 0) {
-        cPicking = false
         cSelectIndex--
       }
     } if (keyCode === 69) {
+      cPicking = false
       if (cSelectIndex < totColors-1) {
-        cPicking = false
         cSelectIndex++
       }
     }
