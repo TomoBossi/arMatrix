@@ -1,6 +1,5 @@
 // To do list:
 //   - save as png with popup window for custom options (pxScale [1-10] (Slider?), crop bg? (toggle), trans bg? (toggle), bgVal [-nNeg, totColors-nNeg-1] (cPalette replica?) only if crop or trans)
-//   - zoom with mouseWheel
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
