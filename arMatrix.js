@@ -1,6 +1,5 @@
 // To do list:
-//   - save as png with popup window for custom options, like the colab ones (https://p5js.org/reference/#/p5/createImage, https://p5js.org/reference/#/p5.Image/save), copy/paste matrix+color to/from clipboard (https://openprocessing.org/sketch/1034949/, https://editor.p5js.org/olafval/sketches/vmclfZbIB, https://editor.p5js.org/jeandenis/sketches/FuI7_RhOH), save/load matrix text file (https://p5js.org/reference/#/p5.PrintWriter/write, https://youtu.be/0Mq2CxspF5s?t=485)
-//   - cycle colors with q and e
+//   - save as png with popup window for custom options like the colab ones, save/load matrix text file
 //   - zoom with mouseWheel
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
@@ -135,8 +134,8 @@ let tca    = [255, 69] // Text color and alpha (constant)
 let lineca = [120, 255] // Gridline color and alpha (constant)
 let linea  = 255 // Gridline alpha (dynamic, based on zoom)
 let linew  = 1   // Gridline width
-let totColors = 30 // Palette size
-let colorsPerRow = 15 // Colors per palette row
+let totColors = 32 // Palette size
+let colorsPerRow = 16 // Colors per palette row
 let cPaletteRows // Number of rows on color palette
 let row // Palette row index
 let rC // Random color
@@ -995,6 +994,16 @@ function keyboardShortcuts() {
       if (keyCode === i) {
         cPicking = false
         cSelectIndex  = i-48+nNeg
+      }
+    } if (keyCode === 81) {
+      if (cSelectIndex > 0) {
+        cPicking = false
+        cSelectIndex--
+      }
+    } if (keyCode === 69) {
+      if (cSelectIndex < totColors-1) {
+        cPicking = false
+        cSelectIndex++
       }
     }
   }
