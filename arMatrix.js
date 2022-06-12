@@ -379,10 +379,10 @@ function updateZoom(min, max) {
 
 function updatePan() {
   let p = pxwh/2;
-  let r = keyIsDown(RIGHT_ARROW);
-  let l = keyIsDown(LEFT_ARROW);
-  let u = keyIsDown(UP_ARROW);
-  let d = keyIsDown(DOWN_ARROW);
+  let r = keyIsDown(RIGHT_ARROW) || keyIsDown(68);
+  let l = keyIsDown(LEFT_ARROW) || keyIsDown(65);
+  let u = keyIsDown(UP_ARROW) || keyIsDown(87);
+  let d = keyIsDown(DOWN_ARROW) || keyIsDown(83);
   if (r) {
     hPan -= p;
   } if (l) {
