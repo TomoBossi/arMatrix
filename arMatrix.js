@@ -1,6 +1,5 @@
 // To do list:
 //   - save as png with popup window for custom options (pxScale [1-10] (Slider?), crop bg? (toggle), trans bg? (toggle), bgVal [-nNeg, totColors-nNeg-1] (cPalette replica?) only if crop or trans)
-//   - remove 
 //   - zoom with mouseWheel
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
@@ -175,7 +174,7 @@ let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z'],
                         [0, 0, upScale, upScaleButton, 2, 'upscale', ''],
                         [0, 0, null, loadButton, null, 'load', ''], // Special case, uses hidden DOM element
                         [0, 0, saveFile, saveButton, null, 'save', 'ctrl + S'],
-                        // [0, 0, null, savePNGButton, null, 'save image', 'ctrl + shift + S'], // Triggers save interface, not saving itself
+                        [0, 0, savePNG, savePNGButton, null, 'save image', 'ctrl + shift + S'], // Triggers save interface, not saving itself
 ]; // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs, name, kbShortcutLabel]] (set in setup)
 let nClickButtons = clickButtonArray.length; // Number of clickable buttons
 let ctrl = false; // Ctrl key is being held down
@@ -891,7 +890,11 @@ function mouseClicked() {
     let func = button[2];
     let args = button[4];
     if (func && mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2) {
-      func(args);
+      if (args) {
+        func(args);
+      } else {
+        func();
+      }
     }
   }
   // Help button
@@ -1086,7 +1089,7 @@ function keyboardShortcuts() {
         saveFile();
       } 
       if (ctrlShift) {
-        null;
+        savePNG();
       }
     } for (let i = 48; i <= 57; i++) {
       if (keyCode === i) {
@@ -1337,17 +1340,13 @@ function all(a) { // Auxiliary functions for image saving
   for (let i = 0; i < RGBA.width; i++) {
     for (let j = 0; j < RGBA.height; j++) {
       cLab = m[j][i]
-      for (let col of c) {
-        if (col[0] == cLab) {
-          cVal = col[1]
-        }
-      }
+      cVal = c[cLab+nNeg]
       RGBA.set(i, j, color(cVal[0], cVal[1], cVal[2], 255*(!transBg || cLab != bgVal)));
     }
   }
   RGBA.updatePixels()
   return RGBA
-} function savePNG(m, c, pxScale, bgVal, cropBg, transBg) {
-  let modM = getPNG(upscalePNG(cropPNG(m, bgVal, cropBg), pxScale), c, bgVal, transBg)
+} function savePNG(matrix = m, pxScale = 1, bgVal = 0, cropBg = false, transBg = false) {
+  let modM = getPNG(upscalePNG(cropPNG(matrix, bgVal, cropBg), pxScale), getCurrentPalette(), bgVal, transBg)
   modM.save('arMatrixImage', 'png')
 }
