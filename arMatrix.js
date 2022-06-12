@@ -1,5 +1,6 @@
 // To do list:
-//   - save as png with popup window for custom options (pxScale [1-10] (Slider?), crop bg? (toggle), trans bg? (toggle), bgVal [-nNeg, totColors-nNeg-1] (cPalette replica?) only if crop or trans), save/load matrix text file
+//   - save as png with popup window for custom options (pxScale [1-10] (Slider?), crop bg? (toggle), trans bg? (toggle), bgVal [-nNeg, totColors-nNeg-1] (cPalette replica?) only if crop or trans)
+//   - remove 
 //   - zoom with mouseWheel
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
@@ -9,6 +10,7 @@
 //   - select -> copy/cut -> move tool
 //   - replace color wheel png by a shader precomputed in setup
 //   - hue shifting, somehow
+//   - more ui responsiveness on hover and click
 //   - optimize display to lower amount of rectangles and/or lines, if at all possible
 
 // Preloaded data
@@ -96,6 +98,11 @@ if (startupExample) {
 // Global variables
 // Inner logic
 p5.disableFriendlyErrors = true;
+document. addEventListener("keydown", function (event) {
+  if (event.ctrlKey) {
+    event.preventDefault();
+  }
+});
 let m     = []; // Matrix
 let mw    = 16; // Matrix width
 let mh    = 16; // Matrix height
@@ -128,7 +135,7 @@ let hRef   = 0; // Horizontal reference pixel
 let vRed   = 0; // Vertical reference pixel
 let hPan   = 0; // Horizontal camera pan
 let vPan   = 0; // Vertical camera pan
-let pan    = []; // Holds hPan and vPan
+let panC   = []; // Holds hPan and vPan
 let bgc    = 35; // Background color
 let tca    = [255, 69]; // Text color and alpha (constant)
 let lineca = [120, 255]; // Gridline color and alpha (constant)
@@ -160,15 +167,19 @@ let uihcoff = uihc*3/4; // UI highlight color (tool disabled, uihcoff < uihc)
 let hcFillValue; // Placeholder variable for either uihc or uihcoff, accordingly
 let uipscl = 0.7; // Scale of palette buttons in relation to the rest of the buttons
 let uipxpscl = uipx*uipscl; // Palette button length
-let undoredo = true; // Undo or Redo was used during the previous frame
+let undoredo = true; // Undo or Redo was used during the previous frame, init value must be true
 let verbose = true; // If true, prints m whenever a change is made to it
 let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z'],
                         [0, 0, redo, redoButton, null, 'redo', 'ctrl + shift + Z'],
                         [0, 0, reCenter, reCenterButton, null, 'recenter', 'R'],
-                        [0, 0, upScale, upScaleButton, 2, 'upscale', ''],]; // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs, name, kbShortcutLabel]] (set in setup)
+                        [0, 0, upScale, upScaleButton, 2, 'upscale', ''],
+                        [0, 0, null, loadButton, null, 'load', ''], // Special case, uses hidden DOM element
+                        [0, 0, saveFile, saveButton, null, 'save', 'ctrl + S'],
+                        // [0, 0, null, savePNGButton, null, 'save image', 'ctrl + shift + S'], // Triggers save interface, not saving itself
+]; // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs, name, kbShortcutLabel]] (set in setup)
 let nClickButtons = clickButtonArray.length; // Number of clickable buttons
-let undoAble = false; // Ctrl key is being held down
-let redoAble = false; // Ctrl+shift key is being held down
+let ctrl = false; // Ctrl key is being held down
+let ctrlShift = false; // Ctrl+shift key is being held down
 let cPick; // Color picked from color wheel
 let cHover; // Color under pointer from color wheel
 let cPicking = false; // Currently picking a color using the color wheel
@@ -280,8 +291,18 @@ function setup() {
   rectMode(CENTER);
   
   mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()]);
-}
 
+  // Load file button functionality (Special case)
+  load = createFileInput(loadFile);
+  load.elt.style = "opacity: 0";
+  load.size(uipx, uipx);
+  i = 1;
+  for (let button of clickButtonArray) {
+    if (button[5] == 'load') {
+      load.position(w-uipx/1.25-uipx/2, (i*2-1)*uipx/1.25-uipx/2);
+    } i++;
+  }
+}
   
 
 function draw() {
@@ -291,9 +312,9 @@ function draw() {
   s    = pxwh*zoom;
   mwpx = s*mw;
   mhpx = s*mh;
-  pan  = updatePan();
-  hPan = pan[0];
-  vPan = pan[1];
+  panC = updatePan();
+  hPan = panC[0];
+  vPan = panC[1];
   hRef = (w-mwpx+s)/2 + hPan*zoom;
   vRef = (h-mhpx+s)/2 + vPan*zoom;
   zFac = constrain(zoom, 0, 1);
@@ -327,7 +348,7 @@ function draw() {
   // Console log
   if (frameCount == 1 || mod) {
     if (verbose) {
-      console.log(showMatrix(m, type = null)+'\n'+showColors(getCurrentPalette()));
+      console.log(showMatrix(m, type = null)+'\n'+showColors());
     } if (!undoredo) {
       cm++;
       mHist = mHist.slice(0, cm);
@@ -374,7 +395,8 @@ function showMatrix(m, type = null) {
   return matrixText;
 }
   
-  
+
+
 function showColors() {
   let colorsText = 'loadC = [\n';
   for (let colNum of Array.from({length: totColors}, (x, i) => i - nNeg)) {
@@ -548,6 +570,14 @@ function redo() {
 
 
 
+function saveFile(content) {
+  let writer = createWriter('arMatrixSavefile.arm');
+  writer.write(JSON.stringify([m, getCurrentPalette()]));
+  writer.close();
+}
+
+
+
 function baseButton(x, y, color) {
   rectMode(CENTER);
   noStroke();
@@ -565,7 +595,7 @@ function reCenterButton(x, y) {
   fill(uihc);
   ellipse(x, y, uipx*2.25/3);
   fill(uibc);
-  ellipse(x, y, uipx*1.75/3);
+  ellipse(x, y, uipx*1.9/3);
   fill(uihc);
   ellipse(x, y, uipx*1/5);
 }
@@ -625,6 +655,67 @@ function redoButton(x, y) {
   rect(x+uipx/4.5, y-uipx/4.5, uipx/2.25);
   fill(hcFillValue);
   triangle(x, y-0.85*uipx/2.25, x, y-0.35*uipx/2.25, x+uipx/6, y-0.6*uipx/2.25);
+}
+
+
+
+function loadButton(x, y) {
+  fill(bgc/2);
+  noStroke();
+  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  baseButton(x, y, uibc);
+  noFill();
+  strokeWeight(uipx/20);
+  stroke(uihc);
+  rect(x, y, uipx*2/3);
+  fill(uibc);
+  noStroke();
+  rect(x, y-uipx/7, uipx*2.5/3, uipx*1.75/3);
+  fill(uihc);
+  // triangle(x, y+uipx/10, x-uipx/10, y+uipx/4, x+uipx/10, y+uipx/4);
+  stroke(uihc);
+  line(x-uipx/5, y+uipx/20-uipx/20, x+uipx/5, y+uipx/20-uipx/20);
+  line(x-uipx/5, y-uipx/10-uipx/20, x+uipx/5, y-uipx/10-uipx/20);
+  line(x-uipx/5, y-uipx/4-uipx/20, x+uipx/5, y-uipx/4-uipx/20);
+}
+
+
+
+function saveButton(x, y) {
+  fill(bgc/2);
+  noStroke();
+  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  baseButton(x, y, uibc);
+  noFill();
+  strokeWeight(uipx/20);
+  stroke(uihc);
+  rect(x, y, uipx*2/3);
+  fill(uibc);
+  noStroke();
+  rect(x, y-uipx/7, uipx*2.5/3, uipx*1.75/3);
+  fill(uihc);
+  stroke(uihc);
+  line(x-uipx/5, y+uipx/4.5, x+uipx/5, y+uipx/4.5);
+  noFill();
+  triangle(x, y, x-uipx/5, y-uipx/4, x+uipx/5, y-uipx/4);
+}
+
+
+
+function savePNGButton(x, y) {
+  fill(bgc/2);
+  noStroke();
+  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  baseButton(x, y, uibc);
+  noFill();
+  strokeWeight(uipx/20);
+  stroke(uihc);
+  rect(x, y, uipx*2/3);
+  fill(uihc);
+  noStroke();
+  triangle(x-uipx/4,y,x-uipx/4, y+uipx/4, x+uipx/7.5, y+uipx/4)
+  triangle(x+uipx/4,y-uipx/6,x-uipx/20, y+uipx/4, x+uipx/4, y+uipx/4)
+  circle(x-uipx/20, y-uipx/10, uipx/7)
 }
 
 
@@ -782,10 +873,9 @@ function showHelp() {
     textStyle(BOLDITALIC);
     textSize(15);
     fill(uihc);
-    text(clickButtonArray[0][5], w-2*uipx/1.25, clickButtonArray[0][1]);
-    text(clickButtonArray[1][5], w-2*uipx/1.25, clickButtonArray[1][1]);
-    text(clickButtonArray[2][5], w-2*uipx/1.25, clickButtonArray[2][1]);
-    text(clickButtonArray[3][5], w-2*uipx/1.25, clickButtonArray[3][1]);
+    for (let i = 0; i < clickButtonArray.length; i++) {
+      text(clickButtonArray[i][5], w-2*uipx/1.25, clickButtonArray[i][1]);
+    }
     textStyle(NORMAL);
     textAlign(CENTER, CENTER);
   }
@@ -800,7 +890,7 @@ function mouseClicked() {
     let by = button[1];
     let func = button[2];
     let args = button[4];
-    if (mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2) {
+    if (func && mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2) {
       func(args);
     }
   }
@@ -836,7 +926,7 @@ function mouseClicked() {
         } else {
           cPickingIndex = null;
           cPicking = false;
-        }         
+        }
       } else {
         cPickedHolding = false;
         cPickingIndex = null;
@@ -966,15 +1056,16 @@ function setPalette(p) {
 function keyboardShortcuts() {
   // https://www.toptal.com/developers/keycode
   if (keyIsDown(17)) {
-    undoAble = true;
-    redoAble = false;
+    ctrl = true;
+    ctrlShift = false;
   } else {
-    undoAble = false;
+    ctrl = false;
+
   } if (keyIsDown(17) && keyIsDown(16)) {
-    undoAble = false;   
-    redoAble = true;
+    ctrl = false;   
+    ctrlShift = true;
   } else {
-    redoAble = false;
+    ctrlShift = false;
   }
 } function keyPressed() {
   if (keyCode === 73) {
@@ -982,14 +1073,21 @@ function keyboardShortcuts() {
   } else {
     helping = false;
     if (keyCode === 90) {
-      if (undoAble) {
+      if (ctrl) {
         undo();
       } 
-      if (redoAble) {
+      if (ctrlShift) {
         redo();
       }
     } if (keyCode === 82) {
       reCenter();
+    } if (keyCode === 83) {
+      if (ctrl) {
+        saveFile();
+      } 
+      if (ctrlShift) {
+        null;
+      }
     } for (let i = 48; i <= 57; i++) {
       if (keyCode === i) {
         cPicking = false;
@@ -1148,4 +1246,108 @@ function loadColors() {
       }
     }
   }
+}
+
+
+
+function replaceCurrent(e) { // Auxiliary functions for file loading
+  nmc = JSON.parse(e.target.result);
+  m = nmc[0];
+  mh = m.length;
+  mw = m[0].length;
+  setPalette(nmc[1]);
+  reCenter();
+  mod = true;
+} function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = replaceCurrent;
+  reader.readAsText(file.file);
+}
+
+
+
+function all(a) { // Auxiliary functions for image saving
+  res = 1
+  for (let val of a) {
+    res *= val
+  }
+  return Boolean(res)
+} function bgList(mRow, bgVal) {
+  res = []
+  for (let val of mRow) {
+    res.push(val == bgVal)
+  }
+  return res
+} function getCol(m, i) {
+  res = []
+  for (let row of m) {
+    res.push(row[i])
+  }
+  return res
+} function cropPNG(m, bgVal, cropBg) {
+  cM = deepCopy2D(m)
+  if (cropBg) {
+    while (all(bgList(cM[cM.length-1], bgVal))) { // lower border
+      cM = cM.slice(0,cM.length-1)
+    } 
+    while (all(bgList(cM[0], bgVal))) { // upper border
+      cM = cM.slice(1,cM.length)
+    }
+    while (all(bgList(getCol(cM, cM[cM.length-1].length-1), bgVal))) { // right border
+      i = 0
+      for (let row of cM) {
+        row = row.slice(0,cM[cM.length-1].length-1)
+        cM[i] = row
+        i++
+      }
+    }
+    while (all(bgList(getCol(cM, 0), bgVal))) { // left border
+      i = 0
+      for (let row of cM) {
+        row = row.slice(1)
+        cM[i] = row
+        i++
+      }
+    }
+  }
+  return cM
+} function upscalePNG(m, n) {
+  let nmw = n*m[0].length
+  let nmh = n*m.length
+  let cM  = []
+  for (let y = 0; y < nmh; y++) {
+    cM[y] = []
+    for (let x = 0; x < nmw; x++) {
+      cM[y][x] = 0
+    }
+  }
+  for (let y = 0; y < nmh; y+=n) {
+    for (let x = 0; x < nmw; x+=n) {
+      for (let ny = y; ny < y+n; ny++) {
+        for (let nx = x; nx < x+n; nx++) {
+          cM[ny][nx] = m[ceil(y/n)][ceil(x/n)]
+        }
+      }
+    }
+  }
+  return cM
+} function getPNG(m, c, bgVal, transBg) {
+  let RGBA = createImage(m[0].length, m.length)
+  RGBA.loadPixels()
+  for (let i = 0; i < RGBA.width; i++) {
+    for (let j = 0; j < RGBA.height; j++) {
+      cLab = m[j][i]
+      for (let col of c) {
+        if (col[0] == cLab) {
+          cVal = col[1]
+        }
+      }
+      RGBA.set(i, j, color(cVal[0], cVal[1], cVal[2], 255*(!transBg || cLab != bgVal)));
+    }
+  }
+  RGBA.updatePixels()
+  return RGBA
+} function savePNG(m, c, pxScale, bgVal, cropBg, transBg) {
+  let modM = getPNG(upscalePNG(cropPNG(m, bgVal, cropBg), pxScale), c, bgVal, transBg)
+  modM.save('arMatrixImage', 'png')
 }
