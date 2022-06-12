@@ -45,6 +45,10 @@ let zoom   = 1.0; // Amount of zoom
 let zFac   = 1.0; // Zoom constrained between 0 and 1
 let minZ   = 0.05; // Lower bound of allowed zoom range
 let maxZ   = 5; // Upper bound of allowed zoom range
+let zoomInKb; // Holding + key
+let zoomOutKb; // Holding - key
+let zoomInW; // Mouse wheel scrolling up
+let zoomOutW; // Mouse wheel scrolling down
 let s      = pxwh*zoom; // Actual size (width and height) of each square
 let mwpx   = s*mw; // Width of matrix in pixels
 let mhpx   = s*mh; // Height of matrix in pixels
@@ -121,6 +125,7 @@ let onPalette;
 let onClickButtons;
 let onWheel;
 let mouseIndex; // Holds output from mousePosToMatrixIndex()
+let wheelDelta; // temporary holder of last mouse wheel scroll value
 let onHelp; // Mouse currently on top of GUI element (set in mouseOnGUI())
 let helping = false; // Currently showing help overlay
 let helped = false; // Was showing help overlay on previous frame
@@ -248,7 +253,7 @@ function draw() {
   // Drawing tools
   freeDraw();
   
-  // GUI display and interaction (except for mouseClicked, mouseReleased and keyboard shortcuts)
+  // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel and keyboard shortcuts)
   drawClickButtons();
   drawColorPalette();
   mouseHeldInteractions();
@@ -336,12 +341,12 @@ function showColors() {
 
   
 function updateZoom(min, max) {
-  let zoomIn  = keyIsPressed && (key === '+');
-  let zoomOut = keyIsPressed && (key === '-');
-  if (zoomIn) {
-    zoom *= 1.025;
-  } else if (zoomOut) {
-    zoom *= 0.975;
+  zoomInKb  = keyIsPressed && (key === '+');
+  zoomOutKb = keyIsPressed && (key === '-');
+  if (zoomInKb) {
+    zoom *= 1.04;
+  } else if (zoomOutKb) {
+    zoom *= 0.96;
   }
 
   if (mouseIsPressed) {
@@ -350,10 +355,23 @@ function updateZoom(min, max) {
     }
   }
   
-  if (zoomIn || zoomOut){
+  if (wheelDelta) {
+    zoomInW   = wheelDelta < 0;
+    zoomOutW  = wheelDelta > 0;
+    if (zoomInW) {
+      zoom *= 1.15;
+    } else if (zoomOutW) {
+      zoom *= 0.85;
+    }
+    wheelDelta = 0;
+    zoomInW = false
+    zoomOutW = false
+  }
+
+  if (zoomInKb || zoomOutKb || zoomInW || zoomOutW){
     helping = false;
   }
-  
+
   zoom = constrain(zoom, min, max);
   return zoom;
 }
@@ -869,6 +887,12 @@ function mouseClicked() {
       mod = true;
     }
   }
+}
+
+
+
+function mouseWheel(event) {
+  wheelDelta = event.delta;
 }
 
 
