@@ -14,10 +14,7 @@
 // Inner logic
 p5.disableFriendlyErrors = true; // Simple performance optimization
 document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault()); // Prevent default ctrl + key functionality
-for (let element of document.getElementsByClassName("p5Canvas")) {
-  element.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
-}
-
+document.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
 let m     = []; // Matrix
 let mw    = 16; // Matrix width
 let mh    = 16; // Matrix height
