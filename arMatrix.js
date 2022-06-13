@@ -12,8 +12,8 @@
 
 // Global variables
 // Inner logic
-p5.disableFriendlyErrors = true;
-document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault());
+p5.disableFriendlyErrors = true; // Simple performance optimization
+document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault()); // Prevent default ctrl + key functionality
 for (let element of document.getElementsByClassName("p5Canvas")) {
   element.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
 }
