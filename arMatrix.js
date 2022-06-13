@@ -13,11 +13,11 @@
 // Global variables
 // Inner logic
 p5.disableFriendlyErrors = true;
-document. addEventListener("keydown", function (event) {
-  if (event.ctrlKey) {
-    event.preventDefault();
-  }
-});
+document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault());
+for (let element of document.getElementsByClassName("p5Canvas")) {
+  element.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
+}
+
 let m     = []; // Matrix
 let mw    = 16; // Matrix width
 let mh    = 16; // Matrix height
@@ -107,8 +107,18 @@ let clickedOnColor = false; // On mouse click, some color from the palette was c
 let cPickingIndex = null; // Index (cPalette) of color being currently picked
 let cSelectIndex; // Index (cPalette) of currently selected color (set in setup, defaults to 1 if possible)
 let vMod = false; // Currently modifying luminosity value on color wheel
-let pxIndex; // Index of current pixel while hovering over color wheel
 let v = 0.8; // Luminosity value
+let pxIndex; // Index of current pixel while hovering over color wheel
+let cWheel; // Holds the actual wheel image, precomputed in setup
+let radius;
+let ww;
+let wh;
+let cx;
+let cy;
+let rx;
+let ry;
+let cH;
+let cS; // cWheel properties for the shader function cWheelShader
 let cWx; // Color wheel x pos (set in setup)
 let cWy; // Color wheel y pos (set in setup)
 let cWd = uipx*4; // Color wheel diameter
@@ -132,21 +142,12 @@ let helpby; // Help button y pos (set in setup)
 
 
 
-function preload() {
-  cWheelShader();
-}
-
-
-
-function setup() {
-  for (let element of document.getElementsByClassName("p5Canvas")) {
-    element.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
-  }
-  
+function setup() {  
   w = constrain(windowWidth,  666, windowWidth);
   h = constrain(windowHeight, 500, windowHeight);
   smooth();
   createCanvas(w, h);
+  cWheelShader();
   for (let y = 0; y < mh; y++) {
     m[y] = [];
     for (let x = 0; x < mw; x++) {
