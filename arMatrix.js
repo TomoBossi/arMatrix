@@ -6,7 +6,6 @@
 //   - fill tool (change all neighboring pixels of same value at once)
 //   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
-//   - replace color wheel png by a shader precomputed in setup
 //   - hue shifting, somehow
 //   - more ui responsiveness on hover and click
 //   - optimize display to lower amount of rectangles and/or lines, if at all possible
@@ -134,7 +133,7 @@ let helpby; // Help button y pos (set in setup)
 
 
 function preload() {
-  cWheel = loadImage('colorWheel.png');
+  cWheelShader();
 }
 
 
@@ -379,10 +378,10 @@ function updateZoom(min, max) {
 
 function updatePan() {
   let p = pxwh/2;
-  let r = keyIsDown(RIGHT_ARROW) || keyIsDown(68);
-  let l = keyIsDown(LEFT_ARROW) || keyIsDown(65);
-  let u = keyIsDown(UP_ARROW) || keyIsDown(87);
-  let d = keyIsDown(DOWN_ARROW) || keyIsDown(83);
+  let r = keyIsDown(RIGHT_ARROW) || (keyIsDown(68) && !ctrl && !ctrlShift);
+  let l = keyIsDown(LEFT_ARROW) || (keyIsDown(65) && !ctrl && !ctrlShift);
+  let u = keyIsDown(UP_ARROW) || (keyIsDown(87) && !ctrl && !ctrlShift);
+  let d = keyIsDown(DOWN_ARROW) || (keyIsDown(83) && !ctrl && !ctrlShift);
   if (r) {
     hPan -= p;
   } if (l) {
@@ -701,7 +700,7 @@ function drawColorPalette() {
     noStroke();
     fill(col);
     rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10);
-    if ((col[0] + col[1] + col[2])/3 < 60) {
+    if (col[0] < 100 && col[1] < 100 && col[2] < 100) {
       fill(255, 50);
     } else {
       fill(0, 50);
@@ -709,12 +708,12 @@ function drawColorPalette() {
     rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10);
     fill(col);
     rect(bx, by, uipxpscl/1.2, uipxpscl/1.2, uipxpscl/10);
-    stroke(0, 100);
-    strokeWeight(2.5);
-    fill(255, 150);
+    stroke(0, 110);
+    strokeWeight(3);
+    fill(255, 200);
     textAlign(CENTER, CENTER);
     textFont('sans-serif');
-    textSize(uipxpscl/1.9);
+    textSize(uipxpscl/1.75);
     text(val, bx, by);
   }
 }
@@ -834,7 +833,6 @@ function mouseClicked() {
   if (!helped && mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7) {
     helping = true;
   } helped = false;
-  
   
   // Colors
   // Palette
@@ -1284,4 +1282,30 @@ function all(a) { // Auxiliary functions for image saving
 } function savePNG(matrix = m, pxScale = 1, bgVal = 0, cropBg = false, transBg = false) {
   let modM = getPNG(upscalePNG(cropPNG(matrix, bgVal, cropBg), pxScale), getCurrentPalette(), bgVal, transBg)
   modM.save('arMatrixImage', 'png')
+}
+
+
+
+function cWheelShader() {
+  colorMode(HSB);
+  ww = 500;
+  wh = 500;
+  radius = min(ww, wh) / 2.0;
+  cx = ww/2;
+  cy = wh/2;
+  cWheel = createImage(ww, wh);
+  cWheel.loadPixels();
+  for (let x = 0; x < cWheel.height; x++) {
+    for (let y = 0; y < cWheel.width; y++) {
+      rx = x - cx;
+      ry = y - cy;
+      cS = (sqrt(sq(rx) + sq(ry)) / (0.95*radius));
+      if (cS <= 1.05) {
+        cH = ((atan2(rx, ry) / PI) + 1.0) / 2;
+        cWheel.set(x, y, color(cH * 360, cS * 100, 100));
+      }
+    }
+  }
+  cWheel.updatePixels();
+  colorMode(RGB);
 }
