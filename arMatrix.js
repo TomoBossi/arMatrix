@@ -887,7 +887,7 @@ function drawColorWheel() {
 
 function updateHoverColor() {
   if (cPicking) {
-    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2-1) {
+    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2-2) {
       pxIndex = (mouseY * w + mouseX) * pxd * 4;
       loadPixels();
       cHover = [pixels[pxIndex],
