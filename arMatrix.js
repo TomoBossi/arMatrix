@@ -646,13 +646,13 @@ function drawColorPalette() {
     rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10);
     fill(col);
     rect(bx, by, uipxpscl/1.2, uipxpscl/1.2, uipxpscl/10);
-    stroke(0, 110);
-    strokeWeight(3);
-    fill(255, 200);
-    textAlign(CENTER, CENTER);
-    textFont('sans-serif');
-    textSize(uipxpscl/1.75);
-    text(val, bx, by);
+    // stroke(0, 110);
+    // strokeWeight(3);
+    // fill(255, 200);
+    // textAlign(CENTER, CENTER);
+    // textFont('sans-serif');
+    // textSize(uipxpscl/1.75);
+    // text(val, bx, by);
   }
 }
 
