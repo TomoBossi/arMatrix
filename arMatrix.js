@@ -1,13 +1,13 @@
 // To do list:
-//   - save as png with popup window for custom options (pxScale [1-10] (Slider?), crop bg? (toggle), trans bg? (toggle), bgVal [-nNeg, totColors-nNeg-1] (cPalette replica?) only if crop or trans)
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
+//   - more ui responsiveness on hover and click
+//   - save as png with popup window for custom options (pxScale [1-10] (Slider?), crop bg? (toggle), trans bg? (toggle), bgVal [-nNeg, totColors-nNeg-1] (cPalette replica?) only if crop or trans)
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
 //   - fill tool (change all neighboring pixels of same value at once)
 //   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
 //   - hue shifting, somehow
-//   - more ui responsiveness on hover and click
 //   - optimize display to lower amount of rectangles and/or lines, if at all possible
 
 // Global variables
@@ -66,13 +66,14 @@ let rC; // Random color
 let nNeg = 0; // Number of negative values, must be at least 0 and at most totColors - 1 (constrained in setup)
 let cPaletteFixed = [[-1, [222,  82,  82], [222,  82,  82], 0, 0],
                      [ 0, [bgc, bgc, bgc], [bgc, bgc, bgc], 0, 0],
-                     [ 1, [ 40, 200, 100], [ 40, 200, 100], 0, 0],
-                     [ 2, [ 62, 152, 218], [ 62, 152, 218], 0, 0],
-                     [ 3, [200, 200, 200], [200, 200, 200], 0, 0],
-                     [ 4, [177,  88,   6], [177,  88,   6], 0, 0],
-                     [ 5, [200, 200,  40], [200, 200,  40], 0, 0],
-                     [ 6, [187,  92, 180], [187,  92, 180], 0, 0],
-                     [ 7, [100, 100, 100], [100, 100, 100], 0, 0],]; // Index based value-color array, [value, cPick, tempPick, buttonx, buttony] (value and position data set in setup)
+                    //  [ 1, [ 40, 200, 100], [ 40, 200, 100], 0, 0],
+                    //  [ 2, [ 62, 152, 218], [ 62, 152, 218], 0, 0],
+                    //  [ 3, [200, 200, 200], [200, 200, 200], 0, 0],
+                    //  [ 4, [170,  40,   6], [170,  40,   6], 0, 0],
+                    //  [ 5, [200, 200,  40], [200, 200,  40], 0, 0],
+                    //  [ 6, [187,  92, 180], [187,  92, 180], 0, 0],
+                    //  [ 7, [100, 100, 100], [100, 100, 100], 0, 0],
+]; // Index based value-color array, [value, cPick, tempPick, buttonx, buttony] (value and position data set in setup)
 let nFixedColors = cPaletteFixed.length; // Number of preselected colors
 let cPalette = []; // Holds all color palette data
 
@@ -82,8 +83,8 @@ let uibc  = 80; // UI button color
 let uihc  = 200; // UI highlight color
 let uihcoff = uihc*3/4; // UI highlight color (tool disabled, uihcoff < uihc)
 let hcFillValue; // Placeholder variable for either uihc or uihcoff, accordingly
-let uipscl = 0.7; // Scale of palette buttons in relation to the rest of the buttons
-let uipxpscl = uipx*uipscl; // Palette button length
+let uipscl = 0.75; // Scale of palette buttons in relation to the rest of the buttons
+let uipxp = uipx*uipscl; // Palette button length
 let undoredo = true; // Undo or Redo was used during the previous frame, init value must be true
 let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z'],
                         [0, 0, redo, redoButton, null, 'redo', 'ctrl + shift + Z'],
@@ -626,32 +627,32 @@ function drawColorPalette() {
     rectMode(CENTER);
     if (isSelected) {
       stroke(bgc);
-      strokeWeight(uipxpscl/15);
+      strokeWeight(uipxp/15);
       fill(uihc);
-      rect(bx, by, uipxpscl*1.3, uipxpscl*1.3, uipxpscl/6);
-      rect(bx, by+uipxpscl*1.4/1.65, uipxpscl*1.15/1.8, uipxpscl/6, uipxpscl/15);
+      rect(bx, by, uipxp*1.3, uipxp*1.3, uipxp/6);
+      rect(bx, by+uipxp*1.4/1.65, uipxp*1.15/1.8, uipxp/6, uipxp/15);
     } else {
       noStroke();
       fill(bgc/2);
-      rect(bx + uipx/10, by + uipx/10, uipxpscl, uipxpscl, uipxpscl/10);
+      rect(bx + uipx/10, by + uipx/10, uipxp, uipxp, uipxp/10);
     }
     noStroke();
     fill(col);
-    rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10);
+    rect(bx, by, uipxp, uipxp, uipxp/10);
     if (col[0] < 100 && col[1] < 100 && col[2] < 100) {
       fill(255, 50);
     } else {
       fill(0, 50);
     }
-    rect(bx, by, uipxpscl, uipxpscl, uipxpscl/10);
+    rect(bx, by, uipxp, uipxp, uipxp/10);
     fill(col);
-    rect(bx, by, uipxpscl/1.2, uipxpscl/1.2, uipxpscl/10);
+    rect(bx, by, uipxp/1.2, uipxp/1.2, uipxp/10);
     // stroke(0, 110);
     // strokeWeight(3);
     // fill(255, 200);
     // textAlign(CENTER, CENTER);
     // textFont('sans-serif');
-    // textSize(uipxpscl/1.75);
+    // textSize(uipxp/1.75);
     // text(val, bx, by);
   }
 }
@@ -779,7 +780,7 @@ function mouseClicked() {
     let bx = valCol[3];
     let by = valCol[4];
     let i  = valCol[0] + nNeg;
-    if (mouseX > bx - uipxpscl/2 && mouseX < bx + uipxpscl/2 && mouseY > by - uipxpscl/2 && mouseY < by + uipxpscl/2) {
+    if (mouseX > bx - uipxp/2 && mouseX < bx + uipxp/2 && mouseY > by - uipxp/2 && mouseY < by + uipxp/2) {
       clickedOnColor = true;
       if (i == cSelectIndex) {
         if (!cPicking) {
