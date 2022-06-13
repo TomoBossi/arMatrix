@@ -15,6 +15,7 @@
 p5.disableFriendlyErrors = true; // Simple performance optimization
 document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault()); // Prevent default ctrl + key functionality
 document.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
+let verbose = false; // If true, prints m whenever a change is made to it
 let m     = []; // Matrix
 let mw    = 16; // Matrix width
 let mh    = 16; // Matrix height
@@ -62,7 +63,7 @@ let colorsPerRow = 16; // Colors per palette row
 let cPaletteRows; // Number of rows on color palette
 let row; // Palette row index
 let rC; // Random color
-let nNeg = 1; // Number of negative values, must be at least 1 and at most totColors - 1 (constrained in setup)
+let nNeg = 0; // Number of negative values, must be at least 0 and at most totColors - 1 (constrained in setup)
 let cPaletteFixed = [[-1, [222,  82,  82], [222,  82,  82], 0, 0],
                      [ 0, [bgc, bgc, bgc], [bgc, bgc, bgc], 0, 0],
                      [ 1, [ 40, 200, 100], [ 40, 200, 100], 0, 0],
@@ -84,7 +85,6 @@ let hcFillValue; // Placeholder variable for either uihc or uihcoff, accordingly
 let uipscl = 0.7; // Scale of palette buttons in relation to the rest of the buttons
 let uipxpscl = uipx*uipscl; // Palette button length
 let undoredo = true; // Undo or Redo was used during the previous frame, init value must be true
-let verbose = true; // If true, prints m whenever a change is made to it
 let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z'],
                         [0, 0, redo, redoButton, null, 'redo', 'ctrl + shift + Z'],
                         [0, 0, reCenter, reCenterButton, null, 'recenter', 'R'],
@@ -167,7 +167,7 @@ function setup() {
     i++;
   }
   
-  nNeg = constrain(nNeg, 1, totColors - 1);
+  nNeg = constrain(nNeg, 0, totColors - 1);
   cSelectIndex = constrain(nNeg+1, nNeg, totColors-1);
   for (let i = -nNeg; i < totColors - nNeg; i++) {
     if (i < -1 || i > nFixedColors - 2) {
@@ -260,7 +260,7 @@ function draw() {
   // Console log
   if (frameCount == 1 || mod) {
     if (verbose) {
-      console.log(showMatrix(m, type = null)+'\n'+showColors());
+      console.log(JSON.stringify([m, getCurrentPalette()]));
     } if (!undoredo) {
       cm++;
       mHist = mHist.slice(0, cm);
@@ -272,66 +272,6 @@ function draw() {
   }
   // GUIdebug();
   // gridDebug();
-}
-  
-
-  
-function showMatrix(m, type = null) {
-  let rowText = '';
-  let matrixText = 'loadM = [\n';
-  if (type == 'np') {
-     matrixText = 'loadM = np.array([\n';
-  }
-  for (let y = 0; y < m.length; y++) {
-    for (let x = 0; x < m[0].length; x++) {
-      if (m[y][x] < 0 || m[y][x] > 9) {
-        rowText += ' '+m[y][x]+',';
-      } else {
-        rowText += '  '+m[y][x]+',';
-      }
-    }
-    if (type == 'np') {
-      matrixText += 'np.array(['+rowText+']),';
-    } else {
-      matrixText += '['+rowText+'],';
-    }
-    if (y != m.length-1) {
-      matrixText += '\n';
-    }
-    rowText = '';
-  }
-  matrixText += ']';
-  if (type == 'np') {
-     matrixText += ')';
-  }
-  return matrixText;
-}
-  
-
-
-function showColors() {
-  let colorsText = 'loadC = [\n';
-  for (let colNum of Array.from({length: totColors}, (x, i) => i - nNeg)) {
-    if (isIn2Darray(colNum, m)) {
-      for (let currentC of cPalette) {
-        if (currentC[0] == colNum) {
-          let rowText = '';
-          if (colNum > -1 && colNum < 10) {
-            rowText += '[  ' +colNum+', [';
-          } else {
-            rowText += '[ '+colNum+', [';
-          }
-          for (let colRGB of currentC[2]) {
-            rowText += ' '.repeat(3 - int(colRGB>=10) - int(colRGB>=100))+round(colRGB) +',';
-          }
-          rowText += ']],\n';
-          colorsText += rowText;
-        }
-      }
-    }
-  }
-  colorsText = colorsText.slice(0,colorsText.length-1)+']';
-  return colorsText;
 }
 
 
@@ -1153,33 +1093,6 @@ function isIn2Darray(elem, array) {
     }
   }
   return false
-}
-
-
-
-function loadMatrix() {
-  if (loadM.length) {
-    m = loadM;
-    mw = m[0].length; 
-    mh = m.length;
-  }
-}
-
-
-
-function loadColors() {
-  if (loadC.length) {
-    for (let c of loadC) {
-      loadColNum = c[0];
-      loadCol    = c[1];
-      for (let currentC of cPalette) {
-        if (currentC[0] == loadColNum) {
-          currentC[1] = loadCol;
-          currentC[2] = loadCol;
-        }
-      }
-    }
-  }
 }
 
 
