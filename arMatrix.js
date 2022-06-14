@@ -1,6 +1,5 @@
 // To do list:
-//   - fix cWheel on blue side border
-//   - Add "BG" on top of dv (bg) color (0) when using help menu  
+//   - fix cWheel on blue side border  
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
 //   - more ui responsiveness on hover and click
 //   - save as png with popup window for custom options: pxScale [1-50] textBox, crop bg toggle, trans bg toggle
@@ -739,7 +738,8 @@ function showHelp() {
     textSize(15);
     textStyle(ITALIC);
     fill(uihc-50);
-    text('click on a color once to select it, twice to modify it', helpbx-uipx*0.35, cPaletteh+30); 
+    text('click on a color once to select it, and a second time to modify it', helpbx-uipx*0.35, cPaletteh+30);
+    text('is the background color', helpbx-uipx*0.35+(1.75*uipxp/1.75), cPaletteh+50); 
     textAlign(CENTER, CENTER);
     text('github.com/TomoBossi/ArMatrix', w/2, h-15);
     textAlign(RIGHT);
@@ -756,6 +756,29 @@ function showHelp() {
     }
     textStyle(NORMAL);
     textAlign(CENTER, CENTER);
+
+    i = 0;
+    while (i < cPalette.length && val != dv) {
+      val = cPalette[i][0];
+      bx  = cPalette[i][3];
+      by  = cPalette[i][4];
+      if (val == dv) {
+        stroke(0, 110);
+        strokeWeight(3);
+        fill(255, 200);
+        textAlign(CENTER, CENTER);
+        textFont('sans-serif');
+        textSize(uipxp/1.75);
+        text('BG', bx, by);
+        textAlign(LEFT);
+        text('BG', helpbx-uipx*0.35, cPaletteh+50);
+        noFill();
+        stroke(uihc);
+        strokeWeight(2);
+        rect(bx, by, uipxp, uipxp, uibcpx);
+      }
+      i++;
+    }
   }
 }
 
