@@ -1,7 +1,9 @@
 // To do list:
+//   - fix cWheel on blue side border
+//   - Add "BG" on top of dv (bg) color (0) when using help menu  
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
 //   - more ui responsiveness on hover and click
-//   - save as png with popup window for custom options (pxScale [1-10] (Slider?), crop bg? (toggle), trans bg? (toggle), bgVal [-nNeg, totColors-nNeg-1] (cPalette replica?) only if crop or trans)
+//   - save as png with popup window for custom options: pxScale [1-50] textBox, crop bg toggle, trans bg toggle
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
 //   - fill tool (change all neighboring pixels of same value at once)
