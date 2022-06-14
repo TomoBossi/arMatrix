@@ -771,6 +771,7 @@ function showHelp() {
         textSize(uipxp/1.75);
         text('BG', bx, by);
         textAlign(LEFT);
+        fill(255, 255);
         text('BG', helpbx-uipx*0.35, cPaletteh+50);
         noFill();
         stroke(uihc);
