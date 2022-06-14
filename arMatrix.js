@@ -18,13 +18,13 @@ p5.disableFriendlyErrors = true; // Simple performance optimization
 document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault()); // Prevent default ctrl + key functionality
 document.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
 let verbose = false; // If true, prints m whenever a change is made to it
-let m     = []; // Matrix
-let mw    = 16; // Matrix width
-let mh    = 16; // Matrix height
-let dv    = 0; // Default matrix value
-let mod   = false; // m was modified during this frame
+let m = []; // Matrix
+let mw = 16; // Matrix width
+let mh = 16; // Matrix height
+let dv = 0; // Default matrix value
+let mod = false; // m was modified during this frame
 let mHist = []; // Matrix history
-let cm    = 0; // Current matrix, index for mh
+let cm = 0; // Current matrix, index for mh
 let pxChange = false; // m was modified on previous frames, while holding LMB
 let i; // General indexing purposes
 let x; // General matrix element iteration purposes
@@ -37,29 +37,29 @@ let ypx1;
 let ypx2; // Pixel coordinates of corner of matrix element
 let w; // Sketch width  (set in setup)
 let h; // Sketch height (set in setup)
-let pxd    = 1; // Pixel density 
-let pxwh   = 20; // True pixels of width and height of each square at the most zoomed-out level
-let zoom   = 1.0; // Amount of zoom
-let zFac   = 1.0; // Zoom constrained between 0 and 1
-let minZ   = 0.05; // Lower bound of allowed zoom range
-let maxZ   = 5; // Upper bound of allowed zoom range
+let pxd = 1; // Pixel density 
+let pxwh = 20; // True pixels of width and height of each square at the most zoomed-out level
+let zoom = 1.0; // Amount of zoom
+let zFac = 1.0; // Zoom constrained between 0 and 1
+let minZ = 0.05; // Lower bound of allowed zoom range
+let maxZ = 5; // Upper bound of allowed zoom range
 let zoomInKb; // Holding + key
 let zoomOutKb; // Holding - key
 let zoomInW; // Mouse wheel scrolling up
 let zoomOutW; // Mouse wheel scrolling down
-let s      = pxwh*zoom; // Actual size (width and height) of each square
-let mwpx   = s*mw; // Width of matrix in pixels
-let mhpx   = s*mh; // Height of matrix in pixels
-let hRef   = 0; // Horizontal reference pixel
-let vRed   = 0; // Vertical reference pixel
-let hPan   = 0; // Horizontal camera pan
-let vPan   = 0; // Vertical camera pan
-let panC   = []; // Holds hPan and vPan
-let bgc    = 35; // Background color
-let tca    = [255, 69]; // Text color and alpha (constant)
+let s = pxwh*zoom; // Actual size (width and height) of each square
+let mwpx = s*mw; // Width of matrix in pixels
+let mhpx = s*mh; // Height of matrix in pixels
+let hRef = 0; // Horizontal reference pixel
+let vRed = 0; // Vertical reference pixel
+let hPan = 0; // Horizontal camera pan
+let vPan = 0; // Vertical camera pan
+let panC = []; // Holds hPan and vPan
+let bgc = 35; // Background color
+let tca = [255, 69]; // Text color and alpha (constant)
 let lineca = [120, 255]; // Gridline color and alpha (constant)
-let linea  = 255; // Gridline alpha (dynamic, based on zoom)
-let linew  = 1;   // Gridline width
+let linea = 255; // Gridline alpha (dynamic, based on zoom)
+let linew = 1; // Gridline width
 let totColors = 32; // Palette size
 let colorsPerRow = 16; // Colors per palette row
 let cPaletteRows; // Number of rows on color palette
@@ -79,10 +79,13 @@ let cPaletteFixed = [[-1, [222,  82,  82], [222,  82,  82], 0, 0],
 let nFixedColors = cPaletteFixed.length; // Number of preselected colors
 let cPalette = []; // Holds all color palette data
 
-// Interactivity
-let uipx  = 30; // UI button length
-let uibc  = 80; // UI button color
-let uihc  = 200; // UI highlight color
+// Interactivity & related visuals
+let uipx = 30; // UI button length
+let uibcpx = uipx/10; // UI curved border amount
+let uisdpx = uipx/10; // UI shadow X, Y displacement
+let uibc = 80; // UI button color
+let uisc = bgc/2; // UI shadow color
+let uihc = 200; // UI highlight color
 let uihcoff = uihc*3/4; // UI highlight color (tool disabled, uihcoff < uihc)
 let hcFillValue; // Placeholder variable for either uihc or uihcoff, accordingly
 let uipscl = 0.75; // Scale of palette buttons in relation to the rest of the buttons
@@ -450,15 +453,15 @@ function baseButton(x, y, color) {
   rectMode(CENTER);
   noStroke();
   fill(color);
-  rect(x, y, uipx, uipx, uipx/10);
+  rect(x, y, uipx, uipx, uibcpx);
 }
 
 
 
 function reCenterButton(x, y) {
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
   fill(uihc);
   ellipse(x, y, uipx*2.25/3);
@@ -471,9 +474,9 @@ function reCenterButton(x, y) {
 
 
 function upScaleButton(x, y) {
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
   noFill();
   strokeWeight(uipx/20);
@@ -491,9 +494,9 @@ function undoButton(x, y) {
   } else{
     hcFillValue = uihc;
   }
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
   fill(hcFillValue);
   ellipse(x, y, uipx*1.8/3);
@@ -512,9 +515,9 @@ function redoButton(x, y) {
   } else{
     hcFillValue = uihc;
   }
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
   fill(hcFillValue);
   ellipse(x, y, uipx*1.8/3);
@@ -528,9 +531,9 @@ function redoButton(x, y) {
 
 
 function loadButton(x, y) {
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
   noFill();
   strokeWeight(uipx/20);
@@ -550,9 +553,9 @@ function loadButton(x, y) {
 
 
 function saveButton(x, y) {
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
   noFill();
   strokeWeight(uipx/20);
@@ -571,9 +574,9 @@ function saveButton(x, y) {
 
 
 function savePNGButton(x, y) {
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx, uipx, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
   noFill();
   strokeWeight(uipx/20);
@@ -589,17 +592,17 @@ function savePNGButton(x, y) {
 
 
 function helpButton(x, y) {
-  fill(bgc/2);
+  fill(uisc);
   noStroke();
-  rect(x + uipx/10, y + uipx/10, uipx*0.7, uipx*0.7, uipx/10);
+  rect(x + uisdpx, y + uisdpx, uipx*0.7, uipx*0.7, uibcpx);
   rectMode(CENTER);
   noStroke();
   fill(uibc);
-  rect(x, y, uipx*0.7, uipx*0.7, uipx/10);
+  rect(x, y, uipx*0.7, uipx*0.7, uibcpx);
   fill(uihc);
   textAlign(CENTER, CENTER);
   textSize(uipx*0.7/1.25);
-  stroke(bgc/2, 150);
+  stroke(uisc, 150);
   strokeWeight(uipx/10);
   textFont('Georgia');
   text('i', x, y+uipx/20);
@@ -635,8 +638,8 @@ function drawColorPalette() {
       rect(bx, by+uipxp*1.4/1.65, uipxp*1.15/1.8, uipxp/6, uipxp/15);
     } else {
       noStroke();
-      fill(bgc/2);
-      rect(bx + uipx/10, by + uipx/10, uipxp, uipxp, uipxp/10);
+      fill(uisc);
+      rect(bx + uisdpx, by + uisdpx, uipxp, uipxp, uipscl*uibcpx);
     }
     noStroke();
     fill(col);
@@ -683,7 +686,7 @@ function showHelp() {
     rect(w/2-100-17, h/2-55, 17, 17, 5);
     rect(w/2-100+17, h/2-55, 17, 17, 5);
     rect(w/2-100, h/2-72, 17, 17, 5);
-    fill(bgc/2);
+    fill(uisc);
     triangle(w/2-100+0.25, h/2-55, w/2-100-0.25, h/2-55, w/2-100, h/2-55+0.35);
     triangle(w/2-100+0.25, h/2-72, w/2-100-0.25, h/2-72, w/2-100, h/2-72-0.35);
     triangle(w/2-100-17, h/2-55+0.25, w/2-100-17, h/2-55-0.25, w/2-100-17-0.35, h/2-55);
@@ -700,7 +703,7 @@ function showHelp() {
     
     rect(w/2+100-14, h/2-57, 22, 22, 5);
     rect(w/2+100+14, h/2-57, 22, 22, 5);
-    fill(bgc/2);
+    fill(uisc);
     noStroke();
     textSize(20);
     textStyle(BOLD);
@@ -863,8 +866,8 @@ function drawColorWheel() {
   if (cPicking) {
     noStroke();
     rectMode(CENTER);
-    fill(bgc/2);
-    rect(cWx + uipx/10, cWy + cWd/8 + uipx/10, cWd*1.15, cWd*1.4, cWd/8);
+    fill(uisc);
+    rect(cWx + uisdpx, cWy + cWd/8 + uisdpx, cWd*1.15, cWd*1.4, cWd/8);
     fill(uibc-30);
     rect(cWx, cWy + cWd/8, cWd*1.15, cWd*1.4, cWd/8);
     rectMode(CORNER);
