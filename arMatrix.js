@@ -26,9 +26,13 @@ let mod = false; // m was modified during this frame
 let mHist = []; // Matrix history
 let cm = 0; // Current matrix, index for mh
 let pxChange = false; // m was modified on previous frames, while holding LMB
-let i; // General indexing purposes
+
+let val; // General iteration/indexing purposes
+let i; // General iteration/indexing purposes
 let x; // General matrix element iteration purposes
 let y; // General matrix element iteration purposes
+let col; // General cPalette element iteration purposes
+let isSelected; // General selected element purposes
 
 // General visuals
 let xpx1;
@@ -99,6 +103,9 @@ let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z'],
                         [0, 0, saveFile, saveButton, null, 'save', 'ctrl + S'],
                         [0, 0, savePNG, savePNGButton, null, 'save image', 'ctrl + shift + S'], // Triggers save interface, not saving itself
 ]; // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs, name, kbShortcutLabel]] (set in setup)
+let bx;
+let by;
+let bdraw; // Placeholders for button information (x, y, func)
 let nClickButtons = clickButtonArray.length; // Number of clickable buttons
 let ctrl = false; // Ctrl key is being held down
 let ctrlShift = false; // Ctrl+shift key is being held down
@@ -612,10 +619,10 @@ function helpButton(x, y) {
 
 function drawClickButtons() {
   for (let button of clickButtonArray) {
-    let bx = button[0];
-    let by = button[1];
-    let draw = button[3];
-    draw(bx, by);
+    bx = button[0];
+    by = button[1];
+    bdraw = button[3];
+    bdraw(bx, by);
   }
   helpButton(helpbx, helpby);
 }
@@ -624,11 +631,11 @@ function drawClickButtons() {
 
 function drawColorPalette() {
   for (let valCol of cPalette) {
-    let val = valCol[0];
-    let col = valCol[2];
-    let bx  = valCol[3];
-    let by  = valCol[4];
-    let isSelected = cSelectIndex == val + nNeg;
+    val = valCol[0];
+    col = valCol[2];
+    bx  = valCol[3];
+    by  = valCol[4];
+    isSelected = cSelectIndex == val + nNeg;
     rectMode(CENTER);
     if (isSelected) {
       stroke(bgc);
