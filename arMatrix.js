@@ -671,6 +671,12 @@ function drawColorPalette() {
       noStroke();
       fill(uisc);
       rect(bx + uisdpx, by + uisdpx, uipxp, uipxp, uipscl*uibcpx);
+      if (!helping && !isSelected && on) {
+        stroke(bgc);
+        strokeWeight(uipxp/15);
+        fill(uihc);
+        rect(bx, by, uipxp*1.3, uipxp*1.3, uipxp/6);
+      }
     }
     noStroke();
     fill(col);
@@ -683,12 +689,6 @@ function drawColorPalette() {
     rect(bx, by, uipxp, uipxp, uipxp/10);
     fill(col);
     rect(bx, by, uipxp/1.2, uipxp/1.2, uipxp/10);
-    if (!helping && !isSelected && on) {
-      noFill();
-      stroke(uihc);
-      strokeWeight(2);
-      rect(bx, by, uipxp*1.2, uipxp*1.2, uipxp/10);
-    }
   }
 }
 
@@ -1077,11 +1077,9 @@ function mouseOnGUI() {
   onClickButtons = mouseX > (w - clickButtonsw) && mouseY < clickButtonsh;
   onWheel        = mouseX < cWheelw && mouseY < cPaletteh + cWheelh && mouseY > cPaletteh;
   onHelp         = mouseX < helpbx*2 && mouseY > 2*helpby - h;
-  // if (mouseIsPressed) {
   if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod) {
     onGUI = true;
   }
-  // }
 }
 
 
