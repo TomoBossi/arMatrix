@@ -26,6 +26,8 @@ let mHist = []; // Matrix history
 let cm = 0; // Current matrix, index for mh
 let pxChange = false; // m was modified on previous frames, while holding LMB
 
+let button;
+let valCol;
 let val; // General iteration/indexing purposes
 let i; // General iteration/indexing purposes
 let x; // General matrix element iteration purposes
@@ -129,8 +131,8 @@ let onWheel; // Mouse pointer currently close to a particular GUI element sectio
 let numkeyType; // 48 or 96, depending on which numeric keys are being used
 let mouseIndex; // Holds output from mousePosToMatrixIndex()
 let wheelDelta; // temporary holder of last mouse wheel scroll value
-let onHelp; // Mouse pointer currently currently close of help GUI element (set in mouseOnGUI())
-let onHelpButton; // Mouse pointer currently on top of help button
+let onHelp = false; // Mouse pointer currently currently close of help GUI element (set in mouseOnGUI())
+let onHelpButton = false; // Mouse pointer currently on top of help button
 let helping = false; // Currently showing help overlay
 let helped = false; // Was showing help overlay on previous frame
 let helpbx; // Help button x pos (set in setup)
@@ -615,7 +617,6 @@ function helpButton(x, y) {
   noStroke();
   rect(x + uisdpx, y + uisdpx, uipx*0.7, uipx*0.7, uibcpx);
   rectMode(CENTER);
-  noStroke();
   fill(uibc);
   rect(x, y, uipx*0.7, uipx*0.7, uibcpx);
   fill(uihc);
@@ -686,7 +687,7 @@ function drawColorPalette() {
       noFill();
       stroke(uihc);
       strokeWeight(2);
-      rect(bx, by, uipxp*1.2, uipxp*1.2, uipxp/10)
+      rect(bx, by, uipxp*1.2, uipxp*1.2, uipxp/10);
     }
   }
 }
@@ -810,17 +811,31 @@ function showHelp() {
 
 
 function checkCursorHover() {
-  for (let button of clickButtonArray) {
-    let bx = button[0];
-    let by = button[1];
-    button[7] = mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2;
+  if (onGUI) {
+    if (onClickButtons) {
+      for (let button of clickButtonArray) {
+        bx = button[0];
+        by = button[1];
+        button[7] = mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2;
+      }
+    }
+    if (onPalette) {
+      for (let valCol of cPalette) {
+        bx = valCol[3];
+        by = valCol[4];
+        valCol[5] = mouseX > bx - uipxp/2 && mouseX < bx + uipxp/2 && mouseY > by - uipxp/2 && mouseY < by + uipxp/2;
+      }
+    } 
+    onHelpButton = mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7;
+  } else {
+    for (let button of clickButtonArray) {
+      button[7] = false;
+    } 
+    for (let valCol of cPalette) {
+      valCol[5] = false;
+    }
+    onHelpButton = false; 
   }
-  for (let valCol of cPalette) {
-    let bx = valCol[3];
-    let by = valCol[4];
-    valCol[5] = mouseX > bx - uipxp/2 && mouseX < bx + uipxp/2 && mouseY > by - uipxp/2 && mouseY < by + uipxp/2;
-  }
-  onHelpButton = mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7;
 }
 
 
@@ -1062,11 +1077,11 @@ function mouseOnGUI() {
   onClickButtons = mouseX > (w - clickButtonsw) && mouseY < clickButtonsh;
   onWheel        = mouseX < cWheelw && mouseY < cPaletteh + cWheelh && mouseY > cPaletteh;
   onHelp         = mouseX < helpbx*2 && mouseY > 2*helpby - h;
-  if (mouseIsPressed) {
-    if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod) {
-      onGUI = true;
-    }
+  // if (mouseIsPressed) {
+  if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod) {
+    onGUI = true;
   }
+  // }
 }
 
 
