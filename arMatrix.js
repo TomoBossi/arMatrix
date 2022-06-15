@@ -69,9 +69,9 @@ let cPaletteRows; // Number of rows on color palette
 let row; // Palette row index
 let rC; // Random color
 let nNeg = 0; // Number of negative values, must be at least 0 and at most totColors - 1 (constrained in setup)
-let cPaletteFixed = [[-1, [222,  82,  82], [222,  82,  82], 0, 0],
-                     [ 0, [bgc, bgc, bgc], [bgc, bgc, bgc], 0, 0],
-]; // Index based value-color array, [value, cPick, tempPick, buttonx, buttony] (value and position data set in setup)
+let cPaletteFixed = [[-1, [222,  82,  82], [222,  82,  82], 0, 0, false],
+                     [ 0, [bgc, bgc, bgc], [bgc, bgc, bgc], 0, 0, false],
+]; // Index based value-color array, [0:value, 1:cPick, 2:tempPick, 3:buttonx, 4:buttony, 5:cursorOnTop] (value and position data set in setup)
 let nFixedColors = cPaletteFixed.length; // Number of preselected colors
 let cPalette = []; // Holds all color palette data
 
@@ -193,7 +193,7 @@ function setup() {
       rC = [random(255), random(255), random(255)];
       cPalette.push([i, [...rC], [...rC], 0, 0]);
     } else {
-      cPalette.push([i, [...cPaletteFixed[i+1][1]], [...cPaletteFixed[i+1][2]], 0, 0]);
+      cPalette.push([i, [...cPaletteFixed[i+1][1]], [...cPaletteFixed[i+1][2]], 0, 0, false]);
     }
   }
   
@@ -657,6 +657,7 @@ function drawColorPalette() {
     col = valCol[2];
     bx  = valCol[3];
     by  = valCol[4];
+    on  = valCol[5];
     isSelected = cSelectIndex == val + nNeg;
     rectMode(CENTER);
     if (isSelected) {
@@ -681,6 +682,12 @@ function drawColorPalette() {
     rect(bx, by, uipxp, uipxp, uipxp/10);
     fill(col);
     rect(bx, by, uipxp/1.2, uipxp/1.2, uipxp/10);
+    if (!helping && !isSelected && on) {
+      noFill();
+      stroke(uihc);
+      strokeWeight(2);
+      rect(bx, by, uipxp*1.2, uipxp*1.2, uipxp/10)
+    }
   }
 }
 
@@ -808,6 +815,11 @@ function checkCursorHover() {
     let by = button[1];
     button[7] = mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2;
   }
+  for (let valCol of cPalette) {
+    let bx = valCol[3];
+    let by = valCol[4];
+    valCol[5] = mouseX > bx - uipxp/2 && mouseX < bx + uipxp/2 && mouseY > by - uipxp/2 && mouseY < by + uipxp/2;
+  }
   onHelpButton = mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7;
 }
 
@@ -842,10 +854,11 @@ function mouseClicked() {
   // Palette
   clickedOnColor = false;
   for (let valCol of cPalette) {
-    let bx = valCol[3];
-    let by = valCol[4];
-    let i  = valCol[0] + nNeg;
-    if (mouseX > bx - uipxp/2 && mouseX < bx + uipxp/2 && mouseY > by - uipxp/2 && mouseY < by + uipxp/2) {
+    bx = valCol[3];
+    by = valCol[4];
+    on = valCol[5];
+    i  = valCol[0] + nNeg;
+    if (on) {
       clickedOnColor = true;
       if (i == cSelectIndex) {
         if (!cPicking) {
@@ -913,7 +926,6 @@ function mouseReleased() {
   if (vMod) {
     vMod = false;
   }
-  
   // Drawing
   if (pxChange) {
     mod = true;
@@ -930,10 +942,14 @@ function drawColorWheel() {
     rect(cWx + uisdpx, cWy + cWd/8 + uisdpx, cWd*1.15, cWd*1.4, cWd/8);
     fill(uibc-30);
     rect(cWx, cWy + cWd/8, cWd*1.15, cWd*1.4, cWd/8);
+    noFill();
+    stroke(uihc, 100);
+    strokeWeight(1);
+    rect(cWx, cWy + cWd/8, cWd*1.15-2, cWd*1.4-2, cWd/8);
+    noStroke();
     rectMode(CORNER);
     tint(255*v);
     image(cWheel, cWx, cWy, cWd, cWd);
-    noFill();
     stroke(uihc);
     strokeWeight(2);
     ellipse(cWx, cWy, cWd);
