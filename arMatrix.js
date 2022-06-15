@@ -1,5 +1,5 @@
 // To do list:
-//   - fix cWheel on blue side border  
+//   - fix cWheel on blue side border (use HSB calculation from distance and angle to center of circle, not color of pixel) 
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
 //   - save as png with popup window for custom options
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
@@ -965,6 +965,7 @@ function mouseReleased() {
 }
 
 
+
 function drawColorWheel() {
   if (cPicking) {
     noStroke();
@@ -1139,7 +1140,6 @@ function gridDebug() {
 function mousePosToMatrixIndex() {
   x = floor((constrain(mouseX, hRef - s/2 - 1, hRef - s/2 + s*mw + 1) - (hRef - s/2))/s);
   y = floor((constrain(mouseY, vRef - s/2 - 1, vRef - s/2 + s*mh + 1) - (vRef - s/2))/s);
-  // console.log(x, y, x >= 0 && x < mw && y >= 0 && y < mh);
   return [x, y, x >= 0 && x < mw && y >= 0 && y < mh];
 }
 
