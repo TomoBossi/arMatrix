@@ -119,15 +119,6 @@ let vMod = false; // Currently modifying luminosity value on color wheel
 let v = 0.8; // Luminosity value
 let pxIndex; // Index of current pixel while hovering over color wheel
 let cWheel; // Holds the actual wheel image, precomputed in setup
-let radius;
-let ww;
-let wh;
-let cx;
-let cy;
-let rx;
-let ry;
-let cH;
-let cS; // cWheel properties for the shader function cWheelShader
 let cWx; // Color wheel x pos (set in setup)
 let cWy; // Color wheel y pos (set in setup)
 let cWd = uipx*4; // Color wheel diameter
@@ -148,6 +139,26 @@ let helping = false; // Currently showing help overlay
 let helped = false; // Was showing help overlay on previous frame
 let helpbx; // Help button x pos (set in setup)
 let helpby; // Help button y pos (set in setup)
+
+// cWheel shader
+let radius;
+let ww;
+let wh;
+let cx;
+let cy;
+let rx;
+let ry;
+let cH;
+let cS; // cWheel properties
+
+// Save image menu
+let menupxw;
+let menupxh; // Save menu window width and height (set in setup)
+let saveMenuing = false; // Currently viewing save menu
+let uimbc = bgc*1.5; // UI menu background color
+let savePxScale = 1;
+let saveCrop = false;
+let saveTrans = false; // Function parameters for savePNG
 
 
 
@@ -460,6 +471,11 @@ function baseButton(x, y, color) {
   noStroke();
   fill(color);
   rect(x, y, uipx, uipx, uibcpx);
+  noFill();
+  strokeWeight(1);
+  stroke(uihc, 100);
+  rect(x, y, uipx-2, uipx-2, uibcpx);
+  noStroke();
 }
 
 
@@ -679,15 +695,16 @@ function showHelp() {
     stroke(uibc-50);
     strokeWeight(3);
     
+    // Draw
     rect(w/2, h/2, 50, 80, 30);
-    // fill(10,255,230);
-    // fill(cPalette[cSelectIndex][2]);
-    fill(uihc+20);
+    // fill(uihc+20);
+    fill(cPalette[cSelectIndex][2]);
     rect(w/2-12.5, h/2-20, 25, 40, 5);
     fill(uihc-50);
     rect(w/2+12.5, h/2-20, 25, 40, 5);
     rect(w/2, h/2-10, 7, 20, 7);
-
+    
+    // Pan
     rect(w/2-100, h/2-55, 17, 17, 5);
     rect(w/2-100-17, h/2-55, 17, 17, 5);
     rect(w/2-100+17, h/2-55, 17, 17, 5);
@@ -700,13 +717,13 @@ function showHelp() {
     fill(uihc-50);
     rect(w/2-100, h/2, 50, 80, 30);
     rect(w/2-100-12.5, h/2-20, 25, 40, 5);
-    // fill(10,255,230);
+    fill(uihc+10);
     // fill(cPalette[cSelectIndex][2]);
-    fill(uihc+20);
     rect(w/2-100+12.5, h/2-20, 25, 40, 5);
     fill(uihc-50);
     rect(w/2-100, h/2-10, 7, 20, 7);
     
+    // Zoom
     rect(w/2+100-14, h/2-57, 22, 22, 5);
     rect(w/2+100+14, h/2-57, 22, 22, 5);
     fill(uisc);
@@ -720,9 +737,8 @@ function showHelp() {
     rect(w/2+100, h/2, 50, 80, 30);
     rect(w/2+100-12.5, h/2-20, 25, 40, 5);
     rect(w/2+100+12.5, h/2-20, 25, 40, 5);
-    // fill(10,255,230);
+    fill(uihc+10);
     // fill(cPalette[cSelectIndex][2]);
-    fill(uihc+20);
     rect(w/2+100, h/2-10, 7, 20, 7);
     fill(uihc-50);
     
@@ -745,6 +761,7 @@ function showHelp() {
     textAlign(RIGHT);
     textStyle(NORMAL);
     textSize(11);
+    fill(uihc-30);
     for (let i = 0; i < clickButtonArray.length; i++) {
       text(clickButtonArray[i][6], w-2*uipx/1.25, clickButtonArray[i][1]+uipx/2.25);
     }
@@ -771,7 +788,7 @@ function showHelp() {
         textSize(uipxp/1.75);
         text('BG', bx, by);
         textAlign(LEFT);
-        fill(255, 255);
+        stroke(uibc-50);
         text('BG', helpbx-uipx*0.35, cPaletteh+50);
         noFill();
         stroke(uihc);
@@ -1227,7 +1244,7 @@ function all(a) { // Auxiliary functions for image saving
   }
   RGBA.updatePixels()
   return RGBA
-} function savePNG(matrix = m, pxScale = 1, bgVal = 0, cropBg = false, transBg = false) {
+} function savePNG(matrix = m, pxScale = savePxScale, bgVal = dv, cropBg = saveCrop, transBg = saveTrans) {
   let modM = getPNG(upscalePNG(cropPNG(matrix, bgVal, cropBg), pxScale), getCurrentPalette(), bgVal, transBg)
   modM.save('arMatrixImage', 'png')
 }
