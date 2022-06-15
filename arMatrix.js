@@ -724,6 +724,13 @@ function showHelp() {
     // fill(uihc+20);
     fill(cPalette[cSelectIndex][2]);
     rect(w/2-12.5, h/2-20, 25, 40, 5);
+    noFill();
+    stroke(uihc);
+    strokeWeight(2);
+    rect(w/2-12.5, h/2-20, 25-5, 40-5, 5);
+    rect(w/2, h/2-10-3/2, 7+5, 20+5-3, 7);
+    stroke(uibc-50);
+    strokeWeight(3);
     fill(uihc-50);
     rect(w/2+12.5, h/2-20, 25, 40, 5);
     rect(w/2, h/2-10, 7, 20, 7);
