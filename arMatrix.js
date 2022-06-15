@@ -13,10 +13,10 @@
 
 // Global variables
 // Inner logic
-p5.disableFriendlyErrors = true; // Simple performance optimization
+p5.disableFriendlyErrors = false; // Simple performance optimization
 document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault()); // Prevent default ctrl + key functionality
 document.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
-let verbose = false; // If true, prints m whenever a change is made to it
+let verbose = true; // If true, prints m whenever a change is made to it
 let m = []; // Matrix
 let mw = 16; // Matrix width
 let mh = 16; // Matrix height
@@ -44,9 +44,8 @@ let w; // Sketch width  (set in setup)
 let h; // Sketch height (set in setup)
 let pxd = 1; // Pixel density 
 let pxwh = 20; // True pixels of width and height of each square at the most zoomed-out level
-let zoom = 1.0; // Amount of zoom
-let zFac = 1.0; // Zoom constrained between 0 and 1
-let minZ = 0.05; // Lower bound of allowed zoom range
+let zoom = 1.0; // Amount of zoom, default 1
+let minZ = 1/pxwh; // Lower bound of allowed zoom range
 let maxZ = 5; // Upper bound of allowed zoom range
 let zoomInKb; // Holding + key
 let zoomOutKb; // Holding - key
@@ -59,12 +58,10 @@ let hRef = 0; // Horizontal reference pixel
 let vRed = 0; // Vertical reference pixel
 let hPan = 0; // Horizontal camera pan
 let vPan = 0; // Vertical camera pan
-let panC = []; // Holds hPan and vPan
 let bgc = 35; // Background color
 let tca = [255, 69]; // Text color and alpha (constant)
-let lineca = [120, 255]; // Gridline color and alpha (constant)
-let linea = 255; // Gridline alpha (dynamic, based on zoom)
-let linew = 1; // Gridline width
+let lineca = [120, 255]; // Gridline color (constant) and alpha (based on zoom, dynamic)
+let linew = 1; // Gridline width (based on zoom, dynamic)
 let totColors = 32; // Palette size
 let colorsPerRow = 16; // Colors per palette row
 let cPaletteRows; // Number of rows on color palette
@@ -240,37 +237,17 @@ function setup() {
 
 function draw() {
   background(bgc);
-  keyboardShortcuts();
-  zoom = updateZoom(minZ, maxZ);
-  s    = pxwh*zoom;
-  mwpx = s*mw;
-  mhpx = s*mh;
-  panC = updatePan();
-  hPan = panC[0];
-  vPan = panC[1];
-  hRef = (w-mwpx+s)/2 + hPan*zoom;
-  vRef = (h-mhpx+s)/2 + vPan*zoom;
-  zFac = constrain(zoom, 0, 1);
-  la   = lineca[1] * zFac**1.5;
-  
-  // Draw grid
+  // Update zoom and pan
+  updateZoom(minZ, maxZ);
+  updatePan();
+  // Check if mouse on GUI elements
   mouseOnGUI();
-  for (let y = 0; y < mh; y++) {
-    for (let x = 0; x < mw; x++) {
-      xpx1 = hRef + x*s;
-      ypx1 = vRef + y*s;
-      xpx2 = xpx1 + s;
-      ypx2 = ypx1 + s;
-      stroke(lineca[0], la);
-      strokeWeight(linew);
-      fill(cPalette[m[y][x] + nNeg][2]);
-      rect(xpx1, ypx1, s, s);
-    }
-  }
+  // Draw matrix
+  drawGrid();
   // Drawing tools
   freeDraw();
-  
-  // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel and keyboard shortcuts)
+  // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel)
+  keyboardShortcuts();
   checkCursorHover();
   drawClickButtons();
   drawColorPalette();
@@ -278,12 +255,37 @@ function draw() {
   drawColorWheel();
   updateHoverColor();
   showHelp();
-  
-  // Console log
+  // History
+  mModHandler();
+  // Debug
+  // GUIdebug();
+  // gridDebug();
+}
+
+
+
+function drawGrid() {
+  lineca[1] = 255 * map(zoom, minZ, 1, 0, 1);
+  linew = constrain(map(zoom, minZ, 1, 0, 1), 0, 1);
+  for (let y = 0; y < mh; y++) {
+    for (let x = 0; x < mw; x++) {
+      xpx1 = hRef + x*s;
+      ypx1 = vRef + y*s;
+      xpx2 = xpx1 + s;
+      ypx2 = ypx1 + s;
+      stroke(lineca);
+      strokeWeight(linew);
+      fill(cPalette[m[y][x] + nNeg][2]);
+      rect(xpx1, ypx1, s, s);
+    }
+  }
+}
+
+
+
+function mModHandler() {
   if (frameCount == 1 || mod) {
-    if (verbose) {
-      console.log(JSON.stringify([m, getCurrentPalette()]));
-    } if (!undoredo) {
+    if (!undoredo) { // If undo or redo, the problem gets adressed in undo() or redo()
       cm++;
       mHist = mHist.slice(0, cm);
       mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()]);
@@ -291,9 +293,10 @@ function draw() {
     mod      = false;
     undoredo = false;
     pxChange = false;
+    if (verbose) {
+      console.log(JSON.stringify([m, getCurrentPalette()]));
+    } 
   }
-  // GUIdebug();
-  // gridDebug();
 }
 
 
@@ -331,7 +334,9 @@ function updateZoom(min, max) {
   }
 
   zoom = constrain(zoom, min, max);
-  return zoom;
+  s    = pxwh*zoom;
+  mwpx = s*mw;
+  mhpx = s*mh;
 }
 
 
@@ -362,8 +367,9 @@ function updatePan() {
   if (r || l || u || d){
     helping = false;
   }
-  
-  return [hPan, vPan];
+
+  hRef = (w-mwpx+s)/2 + hPan*zoom;
+  vRef = (h-mhpx+s)/2 + vPan*zoom;
 }
 
 
