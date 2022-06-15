@@ -71,13 +71,6 @@ let rC; // Random color
 let nNeg = 0; // Number of negative values, must be at least 0 and at most totColors - 1 (constrained in setup)
 let cPaletteFixed = [[-1, [222,  82,  82], [222,  82,  82], 0, 0],
                      [ 0, [bgc, bgc, bgc], [bgc, bgc, bgc], 0, 0],
-                    //  [ 1, [ 40, 200, 100], [ 40, 200, 100], 0, 0],
-                    //  [ 2, [ 62, 152, 218], [ 62, 152, 218], 0, 0],
-                    //  [ 3, [200, 200, 200], [200, 200, 200], 0, 0],
-                    //  [ 4, [170,  40,   6], [170,  40,   6], 0, 0],
-                    //  [ 5, [200, 200,  40], [200, 200,  40], 0, 0],
-                    //  [ 6, [187,  92, 180], [187,  92, 180], 0, 0],
-                    //  [ 7, [100, 100, 100], [100, 100, 100], 0, 0],
 ]; // Index based value-color array, [value, cPick, tempPick, buttonx, buttony] (value and position data set in setup)
 let nFixedColors = cPaletteFixed.length; // Number of preselected colors
 let cPalette = []; // Holds all color palette data
@@ -94,17 +87,18 @@ let hcFillValue; // Placeholder variable for either uihc or uihcoff, accordingly
 let uipscl = 0.75; // Scale of palette buttons in relation to the rest of the buttons
 let uipxp = uipx*uipscl; // Palette button length
 let undoredo = true; // Undo or Redo was used during the previous frame, init value must be true
-let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z'],
-                        [0, 0, redo, redoButton, null, 'redo', 'ctrl + shift + Z'],
-                        [0, 0, reCenter, reCenterButton, null, 'recenter', 'R'],
-                        [0, 0, upScale, upScaleButton, 2, 'upscale', ''],
-                        [0, 0, null, loadButton, null, 'load', ''], // Special case, uses hidden DOM element
-                        [0, 0, saveFile, saveButton, null, 'save', 'ctrl + S'],
-                        [0, 0, savePNG, savePNGButton, null, 'save image', 'ctrl + shift + S'], // Triggers save interface, not saving itself
-]; // Holds all relevant clickable button data in the form [[button1xPos, button1yPos, button1function, button1drawFunction, button1functionArgs, name, kbShortcutLabel]] (set in setup)
+let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z', false],
+                        [0, 0, redo, redoButton, null, 'redo', 'ctrl + shift + Z', false],
+                        [0, 0, reCenter, reCenterButton, null, 'recenter', 'R', false],
+                        [0, 0, upScale, upScaleButton, 2, 'upscale', '', false],
+                        [0, 0, null, loadButton, null, 'load', '', false], // Special case, uses hidden DOM element
+                        [0, 0, saveFile, saveButton, null, 'save', 'ctrl + S', false],
+                        [0, 0, savePNG, savePNGButton, null, 'save image', 'ctrl + shift + S', false], // Triggers save interface, not saving itself
+]; // Holds all relevant clickable button data in the form [[0:xPos, 1:yPos, 2:function, 3:drawFunction, 4:functionArgs, 5:label, 6:kbShortcutLabel, 7:cursorOnTop] for each button]. Take care if modifying labels, as they are used to reference buttons in the code. Mostly set in setup.
 let bx;
 let by;
-let bdraw; // Placeholders for button information (x, y, func)
+let on;
+let bdraw; // Placeholders for button information (x, y, cursorOnTop, func)
 let nClickButtons = clickButtonArray.length; // Number of clickable buttons
 let ctrl = false; // Ctrl key is being held down
 let shift = false; // Shift key is being held down
@@ -122,7 +116,7 @@ let cWheel; // Holds the actual wheel image, precomputed in setup
 let cWx; // Color wheel x pos (set in setup)
 let cWy; // Color wheel y pos (set in setup)
 let cWd = uipx*4; // Color wheel diameter
-let onGUI; // Mouse pointer currently on GUI elements (palette, tools, etc.)
+let onGUI; // Mouse pointer currently close to GUI elements (palette, tools, etc.)
 let cPalettew;
 let cPaletteh;
 let clickButtonsw;
@@ -131,10 +125,12 @@ let cWheelw;
 let cWheelh; // Size (width and height) of GUI element (set in setup)
 let onPalette;
 let onClickButtons;
-let onWheel;
+let onWheel; // Mouse pointer currently close to a particular GUI element section
+let numkeyType; // 48 or 96, depending on which numeric keys are being used
 let mouseIndex; // Holds output from mousePosToMatrixIndex()
 let wheelDelta; // temporary holder of last mouse wheel scroll value
-let onHelp; // Mouse currently on top of GUI element (set in mouseOnGUI())
+let onHelp; // Mouse pointer currently currently close of help GUI element (set in mouseOnGUI())
+let onHelpButton; // Mouse pointer currently on top of help button
 let helping = false; // Currently showing help overlay
 let helped = false; // Was showing help overlay on previous frame
 let helpbx; // Help button x pos (set in setup)
@@ -273,6 +269,7 @@ function draw() {
   freeDraw();
   
   // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel and keyboard shortcuts)
+  checkCursorHover();
   drawClickButtons();
   drawColorPalette();
   mouseHeldInteractions();
@@ -628,6 +625,10 @@ function helpButton(x, y) {
   strokeWeight(uipx/10);
   textFont('Georgia');
   text('i', x, y+uipx/20);
+  noFill();
+  strokeWeight(1+1*(onHelpButton && !helping));
+  stroke(uihc, 100+155*(onHelpButton && !helping));
+  rect(x, y, uipx*0.7-2, uipx*0.7-2, uibcpx);
 }
 
 
@@ -638,6 +639,12 @@ function drawClickButtons() {
     by = button[1];
     bdraw = button[3];
     bdraw(bx, by);
+    if (button[7] && !helping && ((button[5] != 'undo' && button[5] != 'redo') || (button[5] == 'undo' && cm > 0) || (button[5] == 'redo' && cm != mHist.length-1))) {
+      noFill();
+      stroke(uihc);
+      strokeWeight(2);
+      rect(bx, by, uipx-2, uipx-2, uibcpx);
+    }
   }
   helpButton(helpbx, helpby);
 }
@@ -674,13 +681,6 @@ function drawColorPalette() {
     rect(bx, by, uipxp, uipxp, uipxp/10);
     fill(col);
     rect(bx, by, uipxp/1.2, uipxp/1.2, uipxp/10);
-    // stroke(0, 110);
-    // strokeWeight(3);
-    // fill(255, 200);
-    // textAlign(CENTER, CENTER);
-    // textFont('sans-serif');
-    // textSize(uipxp/1.75);
-    // text(val, bx, by);
   }
 }
 
@@ -802,14 +802,26 @@ function showHelp() {
 
 
 
+function checkCursorHover() {
+  for (let button of clickButtonArray) {
+    let bx = button[0];
+    let by = button[1];
+    button[7] = mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2;
+  }
+  onHelpButton = mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7;
+}
+
+
+
 function mouseClicked() {
   // Clickable Buttons (upper right)
   for (let button of clickButtonArray) {
     let bx = button[0];
     let by = button[1];
+    let on = button[7];
     let func = button[2];
     let args = button[4];
-    if (func && mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2) {
+    if (func && on) {
       if (args) {
         func(args);
       } else {
@@ -822,7 +834,7 @@ function mouseClicked() {
     helping = false;
     helped = true;
   }
-  if (!helped && mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7) {
+  if (!helped && onHelpButton) {
     helping = true;
   } helped = false;
   
@@ -983,23 +995,15 @@ function setPalette(p) {
 
 function keyboardShortcuts() {
   // https://www.toptal.com/developers/keycode
-  if (keyIsDown(17)) {
-    ctrl = true;
-  } else {
-    ctrl = false;
-
-  } if (keyIsDown(16)) {
-    shift = true;
-  } else {
-    shift = false;
-  }
+  ctrl = keyIsDown(17);
+  shift = keyIsDown(16);
 } function keyPressed() {
   if (keyCode === 73) {
     helping = !helping;
   } else {
     helping = false;
     if (keyCode === 90) {
-      if (ctrl) {
+      if (ctrl && !shift) {
         undo();
       } 
       if (ctrl && shift) {
@@ -1014,10 +1018,11 @@ function keyboardShortcuts() {
       if (ctrl && shift) {
         savePNG();
       }
-    } for (let i = 48; i <= 57; i++) {
-      if (keyCode === i) {
+    } for (let i = 0; i <= 9; i++) {
+      numkeyType = 48 + (96-48)*(keyCode > 95);
+      if (keyCode === i+numkeyType) {
         cPicking = false;
-        cSelectIndex = i-48+nNeg;
+        cSelectIndex = i+nNeg;
       }
     } if (keyCode === 81) {
       cPicking = false;
