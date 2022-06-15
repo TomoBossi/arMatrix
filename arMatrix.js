@@ -697,7 +697,7 @@ function drawColorPalette() {
     noStroke();
     fill(col);
     rect(bx, by, uipxp, uipxp, uipxp/10);
-    if (col[0] < 100 && col[1] < 100 && col[2] < 100) {
+    if (col[0] < 130 && col[1] < 130 && col[2] < 140) {
       fill(255, 50);
     } else {
       fill(0, 50);
@@ -726,7 +726,7 @@ function showHelp() {
     rect(w/2-12.5, h/2-20, 25, 40, 5);
     noFill();
     stroke(uihc);
-    strokeWeight(2);
+    strokeWeight(1.5);
     rect(w/2-12.5, h/2-20, 25-5, 40-5, 5);
     rect(w/2, h/2-10-3/2, 7+5, 20+5-3, 7);
     stroke(uibc-50);
