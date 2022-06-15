@@ -1,8 +1,7 @@
 // To do list:
 //   - fix cWheel on blue side border  
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
-//   - more ui responsiveness on hover and click
-//   - save as png with popup window for custom options: pxScale [1-50] textBox, crop bg toggle, trans bg toggle
+//   - save as png with popup window for custom options
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
 //   - fill tool (change all neighboring pixels of same value at once)
