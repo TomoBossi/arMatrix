@@ -10,13 +10,14 @@
 //   - select -> copy/cut -> move tool
 //   - hue shifting, somehow
 //   - optimize display to lower amount of rectangles and/or lines, if at all possible
+//   - turn buttons & palette into objects of their respective classes, better for referencing each button (instead of using label)
 
 // Global variables
 // Inner logic
 p5.disableFriendlyErrors = false; // Simple performance optimization
 document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault()); // Prevent default ctrl + key functionality
 document.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
-let verbose = true; // If true, prints m whenever a change is made to it
+let verbose = false; // If true, prints m whenever a change is made to it
 let m = []; // Matrix
 let mw = 16; // Matrix width
 let mh = 16; // Matrix height
@@ -54,8 +55,8 @@ let zoomOutW; // Mouse wheel scrolling down
 let s = pxwh*zoom; // Actual size (width and height) of each square
 let mwpx = s*mw; // Width of matrix in pixels
 let mhpx = s*mh; // Height of matrix in pixels
-let hRef = 0; // Horizontal reference pixel
-let vRed = 0; // Vertical reference pixel
+let hRef; // Horizontal reference pixel
+let vRed; // Vertical reference pixel
 let hPan = 0; // Horizontal camera pan
 let vPan = 0; // Vertical camera pan
 let bgc = 35; // Background color
@@ -158,26 +159,70 @@ let saveTrans = false; // Function parameters for savePNG
 
 
 function setup() {  
+  // Initialize canvas
   w = constrain(windowWidth,  666, windowWidth);
-  h = constrain(windowHeight, 500, windowHeight);
-  smooth();
+  h = constrain(windowHeight, 500, windowHeight)
   createCanvas(w, h);
+  // Misc
+  smooth();
+  imageMode(CENTER);
+  ellipseMode(CENTER);
+  rectMode(CENTER);
+  hRef = (w-mwpx)/2;
+  vRef = (h-mhpx)/2;
+  // Precompute cWheel
   cWheelShader();
+  // Initialize m
+  initMatrix();
+  // Initialize GUI
+  initGUI();
+  // Initilize history
+  mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()]);
+}
+
+
+
+function draw() {
+  background(bgc);
+  // Update zoom and pan
+  updateZoom(minZ, maxZ);
+  updatePan();
+  // Check if mouse on GUI elements
+  mouseOnGUI();
+  // Draw matrix
+  drawGrid();
+  // Drawing tools
+  freeDraw();
+  // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel)
+  keyboardShortcuts();
+  checkCursorHover();
+  drawClickButtons();
+  drawColorPalette();
+  mouseHeldInteractions();
+  drawColorWheel();
+  updateHoverColor();
+  showHelp();
+  // History
+  mModHandler();
+  // Debug
+  // GUIdebug();
+  // gridDebug();
+}
+
+
+
+function initMatrix() {
   for (let y = 0; y < mh; y++) {
     m[y] = [];
     for (let x = 0; x < mw; x++) {
       m[y][x] = dv;
     }
   }
-  
-  s    = pxwh*zoom;
-  mwpx = s*mw;
-  mhpx = s*mh;
-  hRef = (w-mwpx)/2;
-  vRef = (h-mhpx)/2;
-  hPan = 0;
-  vPan = 0;
-  
+}
+
+
+
+function initGUI() {
   i = 1;
   for (let button of clickButtonArray) {
     button[0] = w-uipx/1.25;
@@ -215,12 +260,6 @@ function setup() {
   cWy = cWd/1.725 + cPaletteh;
   helpbx = uipx/1.25-uipx/2+uipx/2*0.7;
   helpby = h - uipx/1.25+uipx/2-uipx/2*0.7;
-  
-  imageMode(CENTER);
-  ellipseMode(CENTER);
-  rectMode(CENTER);
-  
-  mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()]);
 
   // Load file button functionality (Special case)
   load = createFileInput(loadFile);
@@ -232,34 +271,6 @@ function setup() {
       load.position(w-uipx/1.25-uipx/2, (i*2-1)*uipx/1.25-uipx/2);
     } i++;
   }
-}
-  
-
-function draw() {
-  background(bgc);
-  // Update zoom and pan
-  updateZoom(minZ, maxZ);
-  updatePan();
-  // Check if mouse on GUI elements
-  mouseOnGUI();
-  // Draw matrix
-  drawGrid();
-  // Drawing tools
-  freeDraw();
-  // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel)
-  keyboardShortcuts();
-  checkCursorHover();
-  drawClickButtons();
-  drawColorPalette();
-  mouseHeldInteractions();
-  drawColorWheel();
-  updateHoverColor();
-  showHelp();
-  // History
-  mModHandler();
-  // Debug
-  // GUIdebug();
-  // gridDebug();
 }
 
 
