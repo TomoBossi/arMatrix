@@ -55,7 +55,7 @@ let s = pxwh*zoom; // Actual size (width and height) of each square
 let mwpx = s*mw; // Width of matrix in pixels
 let mhpx = s*mh; // Height of matrix in pixels
 let hRef; // Horizontal reference pixel
-let vRed; // Vertical reference pixel
+let vRef; // Vertical reference pixel
 let hPan = 0; // Horizontal camera pan
 let vPan = 0; // Vertical camera pan
 let bgc = 35; // Background color
