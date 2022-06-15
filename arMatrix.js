@@ -1,7 +1,6 @@
 // To do list:
 //   - fix cWheel on blue side border (use HSB calculation from distance and angle to center of circle, not color of pixel) 
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
-//   - save as png with popup window for custom options
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
 //   - fill tool (change all neighboring pixels of same value at once)
@@ -17,13 +16,16 @@ p5.disableFriendlyErrors = false; // Simple performance optimization
 document.addEventListener("keydown", (e) => e.ctrlKey && e.preventDefault()); // Prevent default ctrl + key functionality
 document.addEventListener("contextmenu", (e) => e.preventDefault()); // Prevent context menu popup on right click
 let verbose = false; // If true, prints m whenever a change is made to it
+let a; // Placeholder for arrays
 let m = []; // Matrix
 let mw = 16; // Matrix width
 let mh = 16; // Matrix height
 let dv = 0; // Default matrix value
+let mEmpty = true; // Matrix contains only dv
 let mod = false; // m was modified during this frame
 let mHist = []; // Matrix history
 let cm = 0; // Current matrix, index for mh
+let mCopy; // Placeholder for deep-copy of m
 let pxChange = false; // m was modified on previous frames, while holding LMB
 
 let button;
@@ -92,7 +94,7 @@ let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z', false
                         [0, 0, upScale, upScaleButton, 2, 'upscale', '', false],
                         [0, 0, null, loadButton, null, 'load', '', false], // Special case, uses hidden DOM element
                         [0, 0, saveFile, saveButton, null, 'save', 'ctrl + S', false],
-                        [0, 0, savePNG, savePNGButton, null, 'save image', 'ctrl + shift + S', false], // Triggers save interface, not saving itself
+                        [0, 0, openSaveMenu, savePNGButton, null, 'save image', 'ctrl + shift + S', false], // Triggers save interface, not saving itself
 ]; // Holds all relevant clickable button data in the form [[0:xPos, 1:yPos, 2:function, 3:drawFunction, 4:functionArgs, 5:label, 6:kbShortcutLabel, 7:cursorOnTop] for each button]. Take care if modifying labels, as they are used to reference buttons in the code. Mostly set in setup.
 let bx;
 let by;
@@ -128,7 +130,7 @@ let onWheel; // Mouse pointer currently close to a particular GUI element sectio
 let numkeyType; // 48 or 96, depending on which numeric keys are being used
 let mouseIndex; // Holds output from mousePosToMatrixIndex()
 let wheelDelta; // temporary holder of last mouse wheel scroll value
-let onHelp = false; // Mouse pointer currently currently close of help GUI element (set in mouseOnGUI())
+let onHelp = false; // Mouse pointer currently close of help GUI element (set in mouseOnGUI())
 let onHelpButton = false; // Mouse pointer currently on top of help button
 let helping = false; // Currently showing help overlay
 let helped = false; // Was showing help overlay on previous frame
@@ -147,13 +149,44 @@ let cH;
 let cS; // cWheel properties
 
 // Save image menu
-let menupxw;
-let menupxh; // Save menu window width and height (set in setup)
 let saveMenuing = false; // Currently viewing save menu
+let saveMenuOpened = false; // Save menu opened on current frame
+let saveMenuGUIw;
+let saveMenuGUIh; // Width and height of the entire GUI element and surroundings (set in setup)
+let saveMenuGUIx;
+let saveMenuGUIy; // Center xpos and ypos of GUI element
+let onSaveMenu; // Mouse pointer currently close to GUI element
+let menupxw;
+let menupxh; // Save menu window xpos, ypos, width and height (set in setup)
+let menuDeltah; // Save menu y displacement from center (set in setup)
+let stillSaveMenuing; // Didn't exit menu on current frame
 let uimbc = bgc*1.5; // UI menu background color
 let savePxScale = 1;
 let saveCrop = false;
 let saveTrans = false; // Function parameters for savePNG
+let tempScale; // Holds str version of savePxScale
+let biphasicToggle = false; // Alternates between true and false, half of the time each, every biphasicPeriod frames
+let biphasicPeriod = 30;
+let backToMinScale = true; // deleted all digits or scrolled down, reached 1
+let onScaleUp = false;
+let onScaleDown = false;
+let onCrop = false;
+let onTrans = false; 
+let onExit = false; 
+let onMenuSaveButton = false; // Cursor on top of UI element
+let maxScale = 30; // Max px scale value, min is always 1
+let toggleSize;
+let saveMenuButtonx;
+let scaley;
+let cropy;
+let transy;
+let scaleUpy;
+let scaleDowny;
+let scaleH; // Button positions and sizes, toggleSize and saveMenuButtonx shared by scale, crop and trans (set in setup)
+let exitx;
+let exity; // exit button xpos and ypos (set in setup), uses toggleSize for side length
+let menuSaveButtonx;
+let menuSaveButtony; // save button xpos and ypos (set in setup), uses uipx for side length
 
 
 
@@ -192,8 +225,7 @@ function draw() {
   drawGrid();
   // Drawing tools
   freeDraw();
-  // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel)
-  keyboardShortcuts();
+  // GUI display and interaction (except for mouseClicked, mouseReleased, mouseWheel and keyPressed)
   checkCursorHover();
   drawClickButtons();
   drawColorPalette();
@@ -201,11 +233,12 @@ function draw() {
   drawColorWheel();
   updateHoverColor();
   showHelp();
+  checkIfEmpty();
+  saveMenu();
   // History
   mModHandler();
   // Debug
   // GUIdebug();
-  // gridDebug();
 }
 
 
@@ -222,6 +255,8 @@ function initMatrix() {
 
 
 function initGUI() {
+  initSaveMenu();
+
   i = 1;
   for (let button of clickButtonArray) {
     button[0] = w-uipx/1.25;
@@ -312,8 +347,8 @@ function mModHandler() {
 
   
 function updateZoom(min, max) {
-  zoomInKb  = keyIsPressed && (key === '+');
-  zoomOutKb = keyIsPressed && (key === '-');
+  zoomInKb  = !saveMenuing && keyIsPressed && (key === '+');
+  zoomOutKb = !saveMenuing && keyIsPressed && (key === '-');
   if (zoomInKb) {
     zoom *= 1.04;
   } else if (zoomOutKb) {
@@ -326,7 +361,7 @@ function updateZoom(min, max) {
     }
   }
   
-  if (wheelDelta) {
+  if (wheelDelta && !saveMenuing) {
     zoomInW   = wheelDelta < 0;
     zoomOutW  = wheelDelta > 0;
     if (zoomInW) {
@@ -353,10 +388,10 @@ function updateZoom(min, max) {
 
 function updatePan() {
   let p = pxwh/2;
-  let r = keyIsDown(RIGHT_ARROW) || (keyIsDown(68) && !(ctrl || shift));
-  let l = keyIsDown(LEFT_ARROW) || (keyIsDown(65) && !(ctrl || shift));
-  let u = keyIsDown(UP_ARROW) || (keyIsDown(87) && !(ctrl || shift));
-  let d = keyIsDown(DOWN_ARROW) || (keyIsDown(83) && !(ctrl || shift));
+  let r = !saveMenuing && (keyIsDown(RIGHT_ARROW) || (keyIsDown(68) && !(ctrl || shift)));
+  let l = !saveMenuing && (keyIsDown(LEFT_ARROW) || (keyIsDown(65) && !(ctrl || shift)));
+  let u = !saveMenuing && (keyIsDown(UP_ARROW) || (keyIsDown(87) && !(ctrl || shift)));
+  let d = !saveMenuing && (keyIsDown(DOWN_ARROW) || (keyIsDown(83) && !(ctrl || shift)));
   if (r) {
     hPan -= p;
   } if (l) {
@@ -721,7 +756,7 @@ function showHelp() {
     
     // Draw
     rect(w/2, h/2, 50, 80, 30);
-    // fill(uihc+20);
+    // fill(uihc+10);
     fill(cPalette[cSelectIndex][2]);
     rect(w/2-12.5, h/2-20, 25, 40, 5);
     noFill();
@@ -939,6 +974,38 @@ function mouseClicked() {
       mod = true;
     }
   }
+  // Save menu
+  if (saveMenuing) {
+    if (!onSaveMenu && !saveMenuOpened) {
+      closeSaveMenu();
+    }
+    saveMenuOpened = false;
+    if (onScaleUp) {
+      savePxScale++;
+      backToMinScale = false;
+    } else if (onScaleDown) {
+      if (savePxScale == 1) {
+        backToMinScale = true;
+      }
+      savePxScale--;
+    } 
+    if (savePxScale > maxScale || savePxScale < 1) {
+      savePxScale = constrain(savePxScale, 1, maxScale);
+    } 
+    if (onCrop && !isEmpty(m)) {
+      saveCrop = !saveCrop;
+    } 
+    if (onTrans) {
+      saveTrans = !saveTrans;
+    } 
+    if (onMenuSaveButton) {
+      savePNG();
+      closeSaveMenu();
+    } 
+    if (onExit) {
+      closeSaveMenu();
+    }
+  }
 }
 
 
@@ -1048,47 +1115,92 @@ function setPalette(p) {
 
 
 
-function keyboardShortcuts() {
-  // https://www.toptal.com/developers/keycode
+function keyPressed() {
   ctrl = keyIsDown(17);
   shift = keyIsDown(16);
-} function keyPressed() {
-  if (keyCode === 73) {
-    helping = !helping;
-  } else {
-    helping = false;
-    if (keyCode === 90) {
-      if (ctrl && !shift) {
-        undo();
-      } 
-      if (ctrl && shift) {
-        redo();
-      }
-    } if (keyCode === 82) {
-      reCenter();
-    } if (keyCode === 83) {
-      if (ctrl && !shift) {
-        saveFile();
-      } 
-      if (ctrl && shift) {
-        savePNG();
-      }
-    } for (let i = 0; i <= 9; i++) {
-      numkeyType = 48 + (96-48)*(keyCode > 95);
-      if (keyCode === i+numkeyType) {
+  if (!saveMenuing) {
+    if (keyCode === 73) {
+      helping = !helping;
+    } else {
+      helping = false;
+      if (keyCode === 90) {
+        if (ctrl && !shift) {
+          undo();
+        } 
+        if (ctrl && shift) {
+          redo();
+        }
+      } if (keyCode === 82) {
+        reCenter();
+      } if (keyCode === 83) {
+        if (ctrl && !shift) {
+          saveFile();
+        } 
+        if (ctrl && shift) {
+          openSaveMenu();
+        }
+      } for (let i = 0; i <= 9; i++) {
+        numkeyType = 48 + (96-48)*(keyCode > 95);
+        if (keyCode === i+numkeyType) {
+          cPicking = false;
+          cSelectIndex = i+nNeg;
+        }
+      } if (keyCode === 81) {
         cPicking = false;
-        cSelectIndex = i+nNeg;
+        if (cSelectIndex > 0) {
+          cSelectIndex--;
+        }
+      } if (keyCode === 69) {
+        cPicking = false;
+        if (cSelectIndex < totColors-1) {
+          cSelectIndex++;
+        }
       }
-    } if (keyCode === 81) {
-      cPicking = false;
-      if (cSelectIndex > 0) {
-        cSelectIndex--;
+    }
+  } else {
+    stillSaveMenuing = keyCode === 144 || ctrl || shift;
+    tempScale = str(savePxScale);
+    if (keyCode === 38 || keyCode === 87 && (!ctrl && !shift)) {
+      tempScale = str(savePxScale+1);
+      backToMinScale = false;
+      stillSaveMenuing = true;
+    }
+    if (keyCode === 40 || keyCode == 83 && (!ctrl && !shift)) {
+      tempScale = str(savePxScale-1);
+      backToMinScale = (savePxScale == 1);
+      stillSaveMenuing = true;
+    }
+    for (let k of [...Array(58-48).keys()]) {
+      numkeyType = 48 + (96-48)*(keyCode > 95);
+      if (keyCode === k+numkeyType) {
+        if (!backToMinScale) {
+          tempScale += char(k+48);
+        } else {
+          tempScale = char(k+48);
+        }
+        backToMinScale = false;
+        stillSaveMenuing = true;
       }
-    } if (keyCode === 69) {
-      cPicking = false;
-      if (cSelectIndex < totColors-1) {
-        cSelectIndex++;
+    }
+    if (keyCode === 8) {
+      if (savePxScale > 9) {
+        tempScale = tempScale.slice(0, tempScale.length-1);
+      } else {
+        tempScale = '1'
+        backToMinScale = true;
       }
+      stillSaveMenuing = true;
+    }
+    savePxScale = int(tempScale)
+    if (savePxScale > maxScale || savePxScale < 1) {
+      savePxScale = constrain(savePxScale, 1, maxScale);
+    }
+    if (keyCode === 13 || (keyCode === 83 && ctrl && shift)) {
+      savePNG();
+      closeSaveMenu();
+    }
+    if (!stillSaveMenuing) {
+      closeSaveMenu();
     }
   }
 }
@@ -1101,7 +1213,13 @@ function mouseOnGUI() {
   onClickButtons = mouseX > (w - clickButtonsw) && mouseY < clickButtonsh;
   onWheel        = mouseX < cWheelw && mouseY < cPaletteh + cWheelh && mouseY > cPaletteh;
   onHelp         = mouseX < helpbx*2 && mouseY > 2*helpby - h;
-  if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod) {
+  if (saveMenuing) {
+    onSaveMenu  = mouseX < saveMenuGUIx + saveMenuGUIw/2 && mouseX > saveMenuGUIx - saveMenuGUIw/2
+    onSaveMenu *= mouseY < saveMenuGUIy + saveMenuGUIh/2 && mouseY > saveMenuGUIy - saveMenuGUIh/2
+  } else {
+    onSaveMenu = false
+  }
+  if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod || (saveMenuing && onSaveMenu)) {
     onGUI = true;
   }
 }
@@ -1127,7 +1245,11 @@ function GUIdebug() {
   
   // Help
   rect(0, 2*helpby - h, 2*helpbx, 2*helpby);
+  
   rectMode(CENTER);
+  if (saveMenuing) {
+    rect(saveMenuGUIx, saveMenuGUIy, saveMenuGUIw, saveMenuGUIh)
+  }
 }
 
 
@@ -1180,7 +1302,7 @@ function freeDraw() {
     x = mouseIndex[0];
     y = mouseIndex[1];
     if (mouseIndex[2]) { // Mouse pointer is on top of grid
-      if (!onGUI) {
+      if (!onGUI && !saveMenuing) {
         helping = false;
         if (m[y][x] != cSelectIndex - nNeg) {
           pxChange = true;
@@ -1201,7 +1323,26 @@ function isIn2Darray(elem, array) {
       }
     }
   }
-  return false
+  return false;
+}
+
+
+
+function isEmpty(array) {
+  for (let y = 0; y < array.length; y++) {
+    for (let x = 0; x < array[0].length; x++) {
+      if (array[y][x] != dv) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
+
+function checkIfEmpty() {
+  mEmpty = isEmpty(m);
 }
 
 
@@ -1223,85 +1364,85 @@ function replaceCurrent(e) { // Auxiliary functions for file loading
 
 
 function all(a) { // Auxiliary functions for image saving
-  res = 1
+  res = 1;
   for (let val of a) {
-    res *= val
+    res *= val;
   }
-  return Boolean(res)
+  return Boolean(res);
 } function bgList(mRow, bgVal) {
-  res = []
+  res = [];
   for (let val of mRow) {
-    res.push(val == bgVal)
+    res.push(val == bgVal);
   }
-  return res
-} function getCol(m, i) {
-  res = []
-  for (let row of m) {
-    res.push(row[i])
+  return res;
+} function getCol(a, i) {
+  res = [];
+  for (let row of a) {
+    res.push(row[i]);
   }
-  return res
-} function cropPNG(m, bgVal, cropBg) {
-  cM = deepCopy2D(m)
-  if (cropBg) {
-    while (all(bgList(cM[cM.length-1], bgVal))) { // lower border
-      cM = cM.slice(0,cM.length-1)
+  return res;
+} function cropPNG(a, bgVal, cropBg) {
+  mCopy = deepCopy2D(a);
+  if (cropBg && !mEmpty) {
+    while (all(bgList(mCopy[mCopy.length-1], bgVal))) { // lower border
+      mCopy = mCopy.slice(0,mCopy.length-1);
     } 
-    while (all(bgList(cM[0], bgVal))) { // upper border
-      cM = cM.slice(1,cM.length)
+    while (all(bgList(mCopy[0], bgVal))) { // upper border
+      mCopy = mCopy.slice(1,mCopy.length);
     }
-    while (all(bgList(getCol(cM, cM[cM.length-1].length-1), bgVal))) { // right border
-      i = 0
-      for (let row of cM) {
-        row = row.slice(0,cM[cM.length-1].length-1)
-        cM[i] = row
-        i++
+    while (all(bgList(getCol(mCopy, mCopy[mCopy.length-1].length-1), bgVal))) { // right border
+      i = 0;
+      for (let row of mCopy) {
+        row = row.slice(0,mCopy[mCopy.length-1].length-1);
+        mCopy[i] = row;
+        i++;
       }
     }
-    while (all(bgList(getCol(cM, 0), bgVal))) { // left border
-      i = 0
-      for (let row of cM) {
-        row = row.slice(1)
-        cM[i] = row
-        i++
+    while (all(bgList(getCol(mCopy, 0), bgVal))) { // left border
+      i = 0;
+      for (let row of mCopy) {
+        row = row.slice(1);
+        mCopy[i] = row;
+        i++;
       }
     }
   }
-  return cM
-} function upscalePNG(m, n) {
-  let nmw = n*m[0].length
-  let nmh = n*m.length
-  let cM  = []
+  return mCopy;
+} function upscalePNG(a, n) {
+  let nmw = n*a[0].length;
+  let nmh = n*a.length;
+  let mCopy  = [];
   for (let y = 0; y < nmh; y++) {
-    cM[y] = []
+    mCopy[y] = [];
     for (let x = 0; x < nmw; x++) {
-      cM[y][x] = 0
+      mCopy[y][x] = 0;
     }
   }
   for (let y = 0; y < nmh; y+=n) {
     for (let x = 0; x < nmw; x+=n) {
       for (let ny = y; ny < y+n; ny++) {
         for (let nx = x; nx < x+n; nx++) {
-          cM[ny][nx] = m[ceil(y/n)][ceil(x/n)]
+          mCopy[ny][nx] = a[ceil(y/n)][ceil(x/n)]
         }
       }
     }
   }
-  return cM
-} function getPNG(m, c, bgVal, transBg) {
-  let RGBA = createImage(m[0].length, m.length)
-  RGBA.loadPixels()
+  return mCopy;
+} function getPNG(a, c, bgVal, transBg) {
+  let RGBA = createImage(a[0].length, a.length);
+  RGBA.loadPixels();
   for (let i = 0; i < RGBA.width; i++) {
     for (let j = 0; j < RGBA.height; j++) {
-      cLab = m[j][i]
-      cVal = c[cLab+nNeg]
+      cLab = a[j][i];
+      cVal = c[cLab+nNeg];
       RGBA.set(i, j, color(cVal[0], cVal[1], cVal[2], 255*(!transBg || cLab != bgVal)));
     }
   }
-  RGBA.updatePixels()
-  return RGBA
+  RGBA.updatePixels();
+  return RGBA;
 } function savePNG(matrix = m, pxScale = savePxScale, bgVal = dv, cropBg = saveCrop, transBg = saveTrans) {
-  let modM = getPNG(upscalePNG(cropPNG(matrix, bgVal, cropBg), pxScale), getCurrentPalette(), bgVal, transBg)
-  modM.save('arMatrixImage', 'png')
+  let modM = getPNG(upscalePNG(cropPNG(matrix, bgVal, cropBg), pxScale), getCurrentPalette(), bgVal, transBg);
+  modM.save('arMatrixImage', 'png');
 }
 
 
@@ -1328,4 +1469,191 @@ function cWheelShader() {
   }
   cWheel.updatePixels();
   colorMode(RGB);
+}
+
+
+
+function saveMenu() { // Relatively self-contained .png saving menu 
+  if (saveMenuing) {
+    push();
+    translate(0, -menuDeltah);
+    onScaleUp = false;
+    onScaleDown = false;
+    onCrop = false;
+    onTrans = false;
+    onExit = false;
+    onMenuSaveButton = false;
+    if (mouseX > saveMenuButtonx-toggleSize/2 && mouseX < saveMenuButtonx+toggleSize/2) {
+      onScaleUp = (mouseY > scaleUpy-scaleH/2-menuDeltah && mouseY < scaleUpy+scaleH/2-menuDeltah);
+      onScaleDown = (mouseY > scaleDowny-scaleH/2-menuDeltah && mouseY < scaleDowny+scaleH/2-menuDeltah);
+      onCrop = (mouseY > cropy-toggleSize/2-menuDeltah && mouseY < cropy+toggleSize/2-menuDeltah);
+      onTrans = (mouseY > transy-toggleSize/2-menuDeltah && mouseY < transy+toggleSize/2-menuDeltah);
+    }
+    onExit  = (mouseY > exity-toggleSize/2-menuDeltah && mouseY < exity+toggleSize/2-menuDeltah);
+    onExit *= (mouseX > exitx-toggleSize/2 && mouseX < exitx+toggleSize/2)
+    onMenuSaveButton  = (mouseY > menuSaveButtony-uipx/2-menuDeltah && mouseY < menuSaveButtony+uipx/2-menuDeltah);
+    onMenuSaveButton *= (mouseX > menuSaveButtonx-uipx/2 && mouseX < menuSaveButtonx+uipx/2)
+    if (frameCount%biphasicPeriod == 0) {
+      biphasicToggle = !biphasicToggle;
+    }
+    if (wheelDelta) {
+      backToMinScale = (wheelDelta < 0 && savePxScale == 1);
+      savePxScale += wheelDelta/(abs(wheelDelta));
+      savePxScale = constrain(savePxScale, 1, maxScale);
+      wheelDelta = 0;
+    }
+    fill(uisc);
+    noStroke();
+    rect(saveMenuGUIx+uisdpx, saveMenuGUIy+uisdpx + menuDeltah, menupxw, menupxh, uibcpx);
+    fill(uimbc);
+    rect(saveMenuGUIx, saveMenuGUIy + menuDeltah, menupxw, menupxh, uibcpx);
+    noFill();
+    strokeWeight(1);
+    stroke(uihc, 100);
+    rect(saveMenuGUIx, saveMenuGUIy + menuDeltah, menupxw-2, menupxh-2, uibcpx);
+    fill(bgc);
+    line(saveMenuGUIx - menupxw/2 + uipx, scaley, saveMenuGUIx + menupxw/2 - uipx, scaley);
+    line(saveMenuGUIx - menupxw/2 + uipx, cropy, saveMenuGUIx + menupxw/2 - uipx, cropy);
+    line(saveMenuGUIx - menupxw/2 + uipx, transy, saveMenuGUIx + menupxw/2 - uipx, transy);
+    strokeWeight(1+1*onScaleUp);
+    stroke(uihc, 100+155*onScaleUp);
+    rect(saveMenuButtonx, scaleUpy, toggleSize, scaleH, uibcpx);
+    strokeWeight(1);
+    stroke(uihc, 100);
+    rect(saveMenuButtonx, scaley, toggleSize, toggleSize, uibcpx);
+    strokeWeight(1+1*onScaleDown);
+    stroke(uihc, 100+155*onScaleDown);
+    rect(saveMenuButtonx, scaleDowny, toggleSize, scaleH, uibcpx);
+    strokeWeight(1+1*onCrop*!mEmpty);
+    stroke(uihc, 100+155*onCrop*!mEmpty);
+    rect(saveMenuButtonx, cropy, toggleSize, toggleSize, uibcpx);
+    strokeWeight(1+1*onTrans);
+    stroke(uihc, 100+155*onTrans);
+    rect(saveMenuButtonx, transy, toggleSize, toggleSize, uibcpx);
+    noStroke();
+    if (backToMinScale) {
+      fill((uihc-bgc)*!biphasicToggle + bgc);
+      rect(saveMenuButtonx + uipx/6, scaley, uipx/3, uipx/1.5, uibcpx);
+      fill((uihc-uisc)*biphasicToggle + uisc);
+    } else {
+      fill(uihc);
+      if (biphasicToggle) {
+        rect(saveMenuButtonx + uipx/6, scaley+uipx/3.8, uipx/3, uipx/8, uibcpx);
+      }
+    }
+    textSize(uipx/2);
+    textAlign(RIGHT, CENTER);
+    textFont('sans-serif');
+    textStyle(NORMAL);
+    noStroke();
+    text(savePxScale, saveMenuButtonx + toggleSize/2 - uipx/10, scaley);
+    fill(uihc);
+    if (saveCrop) {
+      rect(saveMenuButtonx, cropy, uipx/2, uipx/2, uibcpx);
+    } if (saveTrans) {
+      rect(saveMenuButtonx, transy, uipx/2, uipx/2, uibcpx);
+    }
+    triangle(saveMenuButtonx, saveMenuGUIy-2.85*toggleSize, saveMenuButtonx+5, saveMenuGUIy-2.85*toggleSize+5, saveMenuButtonx-5, saveMenuGUIy-2.85*toggleSize+5)
+    triangle(saveMenuButtonx, saveMenuGUIy-1.15*toggleSize, saveMenuButtonx+5, saveMenuGUIy-1.15*toggleSize-5, saveMenuButtonx-5, saveMenuGUIy-1.15*toggleSize-5)
+    textFont('helvetica');
+    textAlign(LEFT, CENTER);
+    textStyle(BOLDITALIC);
+    stroke(uibc-50);
+    strokeWeight(3);
+    text('scale', saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, scaley);
+    text('crop', saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, saveMenuGUIy);
+    text('transparency', saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, transy);
+    textStyle(NORMAL);
+    textSize(uipx/2.9);
+    fill(uihc-20);
+    text('sets the size of each pixel', // (up to '+str(maxScale)+')', 
+         saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, scaley+uipx/2.25);
+    text('removes excess borders', saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, saveMenuGUIy+uipx/2.25);
+    text('removes the background', saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, transy+uipx/2.25);
+    fill(uisc);
+    noStroke();
+    rect(exitx+uisdpx, exity+uisdpx, toggleSize, toggleSize, uibcpx);
+    fill(uimbc);
+    rect(exitx, exity, toggleSize, toggleSize, uibcpx);
+    noFill();
+    strokeWeight(1 + 1*onExit);
+    stroke(uihc, 100+155*onExit);
+    rect(exitx, exity, toggleSize-2, toggleSize-2, uibcpx);
+    stroke(uihc-30);
+    strokeWeight(2);
+    line(exitx-toggleSize/5, exity-toggleSize/5, exitx+toggleSize/5, exity+toggleSize/5)
+    line(exitx-toggleSize/5, exity+toggleSize/5, exitx+toggleSize/5, exity-toggleSize/5)
+    strokeWeight(1);
+    stroke(uihc, 100);
+    line(saveMenuGUIx - menupxw/2 + uipx, menuSaveButtony, menuSaveButtonx, menuSaveButtony);
+    savePNGButton(menuSaveButtonx, menuSaveButtony);
+    if (onMenuSaveButton) {
+      noFill();
+      stroke(uihc);
+      strokeWeight(2);
+      rect(menuSaveButtonx, menuSaveButtony, uipx-2, uipx-2, uibcpx);
+    }
+    fill(uihc);
+    textFont('helvetica');
+    textSize(uipx/2);
+    textAlign(LEFT, CENTER);
+    textStyle(BOLDITALIC);
+    stroke(uibc-50);
+    strokeWeight(3);
+    text('save', saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, menuSaveButtony);
+    textStyle(NORMAL);
+    textSize(uipx/2.9);
+    fill(uihc-20);
+    text('enter / ctrl + shift + S', saveMenuGUIx - menupxw/2 + uipx/1.15 - uipx/2, menuSaveButtony+uipx/2.25);
+    pop();
+  }
+}
+
+
+
+function initSaveMenu() {
+  saveMenuGUIx = w/2;
+  saveMenuGUIy = h/2;
+  menupxw = 8*uipx;
+  menupxh = 7*uipx;
+  saveMenuGUIw = menupxw+uipx;
+  saveMenuGUIh = menupxh+uipx;
+  menuDeltah = uipx/1.75;
+  toggleSize = uipx/1.25;
+  saveMenuButtonx = saveMenuGUIx+menupxw/2-uipx/1.15;
+  scaley = saveMenuGUIy-2*toggleSize;
+  cropy = saveMenuGUIy;
+  transy = saveMenuGUIy+2*toggleSize; 
+  scaleUpy = saveMenuGUIy-2.85*toggleSize;
+  scaleDowny = saveMenuGUIy-1.15*toggleSize;
+  scaleH = uipx/3;
+  exitx = saveMenuButtonx;
+  exity = transy + 2*toggleSize;
+  menuSaveButtonx = saveMenuGUIx+menupxw/4.5;
+  menuSaveButtony = transy+2*toggleSize;
+}
+
+
+
+function openSaveMenu() {
+  if (!saveMenuing) {
+    saveMenuing = true;
+    saveMenuOpened = true;
+    if (mEmpty) {
+      saveCrop = false;
+    }
+  }
+}
+
+
+
+function closeSaveMenu() {
+  saveMenuing = false;
+  onSaveMenu = false;
+  onScaleUp = false;
+  onScaleDown = false;
+  onCrop = false;
+  onTrans = false;
+  onExit = false;
+  onMenuSaveButton = false;
 }
