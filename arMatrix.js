@@ -43,7 +43,7 @@ let ypx2; // Pixel coordinates of corner of matrix element
 let w; // Sketch width  (set in setup)
 let h; // Sketch height (set in setup)
 let pxd = 1; // Pixel density 
-let pxwh = 20; // True pixels of width and height of each square at the most zoomed-out level
+let pxwh = 20; // True pixels of width and height of each square at the default zoom level
 let zoom = 1.0; // Amount of zoom, default 1
 let minZ = 1/pxwh; // Lower bound of allowed zoom range
 let maxZ = 5; // Upper bound of allowed zoom range
