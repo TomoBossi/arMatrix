@@ -107,7 +107,7 @@ let by;
 let bdraw; // Placeholders for button information (x, y, func)
 let nClickButtons = clickButtonArray.length; // Number of clickable buttons
 let ctrl = false; // Ctrl key is being held down
-let ctrlShift = false; // Ctrl+shift key is being held down
+let shift = false; // Shift key is being held down
 let cPick; // Color picked from color wheel
 let cHover; // Color under pointer from color wheel
 let cPicking = false; // Currently picking a color using the color wheel
@@ -339,10 +339,10 @@ function updateZoom(min, max) {
 
 function updatePan() {
   let p = pxwh/2;
-  let r = keyIsDown(RIGHT_ARROW) || (keyIsDown(68) && !ctrl && !ctrlShift);
-  let l = keyIsDown(LEFT_ARROW) || (keyIsDown(65) && !ctrl && !ctrlShift);
-  let u = keyIsDown(UP_ARROW) || (keyIsDown(87) && !ctrl && !ctrlShift);
-  let d = keyIsDown(DOWN_ARROW) || (keyIsDown(83) && !ctrl && !ctrlShift);
+  let r = keyIsDown(RIGHT_ARROW) || (keyIsDown(68) && !(ctrl || shift));
+  let l = keyIsDown(LEFT_ARROW) || (keyIsDown(65) && !(ctrl || shift));
+  let u = keyIsDown(UP_ARROW) || (keyIsDown(87) && !(ctrl || shift));
+  let d = keyIsDown(DOWN_ARROW) || (keyIsDown(83) && !(ctrl || shift));
   if (r) {
     hPan -= p;
   } if (l) {
@@ -985,15 +985,13 @@ function keyboardShortcuts() {
   // https://www.toptal.com/developers/keycode
   if (keyIsDown(17)) {
     ctrl = true;
-    ctrlShift = false;
   } else {
     ctrl = false;
 
-  } if (keyIsDown(17) && keyIsDown(16)) {
-    ctrl = false;   
-    ctrlShift = true;
+  } if (keyIsDown(16)) {
+    shift = true;
   } else {
-    ctrlShift = false;
+    shift = false;
   }
 } function keyPressed() {
   if (keyCode === 73) {
@@ -1004,16 +1002,16 @@ function keyboardShortcuts() {
       if (ctrl) {
         undo();
       } 
-      if (ctrlShift) {
+      if (ctrl && shift) {
         redo();
       }
     } if (keyCode === 82) {
       reCenter();
     } if (keyCode === 83) {
-      if (ctrl) {
+      if (ctrl && !shift) {
         saveFile();
       } 
-      if (ctrlShift) {
+      if (ctrl && shift) {
         savePNG();
       }
     } for (let i = 48; i <= 57; i++) {
