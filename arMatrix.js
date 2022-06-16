@@ -9,6 +9,7 @@
 //   - hue shifting, somehow
 //   - optimize display to lower amount of rectangles and/or lines, if at all possible
 //   - turn buttons & palette into objects of their respective classes, better for referencing each button (instead of using label)
+//   - add GUI scaling controls (linearly move uipx inside a fixed range)
 
 // Global variables
 // Inner logic
@@ -763,65 +764,66 @@ function showHelp() {
     strokeWeight(3);
     
     // Draw
-    rect(w/2, h/2, 50, 80, 30);
+    rect(w/2, h/2, uipx*5/3, uipx*8/3, uipx);
     // fill(uihc+10);
     fill(cPalette[cSelectIndex][2]);
-    rect(w/2-12.5, h/2-20, 25, 40, 5);
+    rect(w/2-uipx*12.5/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, 5);
     noFill();
     stroke(uihc);
-    strokeWeight(1.5);
-    rect(w/2-12.5, h/2-20, 25-5, 40-5, 5);
-    rect(w/2, h/2-10-3/2, 7+5, 20+5-3, 7);
+    strokeWeight(uipx*1.5/30);
+    rect(w/2-uipx*12.5/30, h/2-uipx*2/3, uipx*2/3, uipx*35/30, uipx/15);
+    rect(w/2, h/2-uipx*11/30, uipx*12/30, uipx*22/30, uipx*7/30);
     stroke(uibc-50);
-    strokeWeight(3);
+    strokeWeight(uipx/10);
     fill(uihc-50);
-    rect(w/2+12.5, h/2-20, 25, 40, 5);
-    rect(w/2, h/2-10, 7, 20, 7);
+    rect(w/2+uipx*12.5/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx/6);
+    rect(w/2, h/2-uipx*1/3, uipx*7/30, uipx*2/3, uipx*7/30);
     
     // Pan
-    rect(w/2-100, h/2-55, 17, 17, 5);
-    rect(w/2-100-17, h/2-55, 17, 17, 5);
-    rect(w/2-100+17, h/2-55, 17, 17, 5);
-    rect(w/2-100, h/2-72, 17, 17, 5);
+    rect(w/2-uipx*100/30, h/2-uipx*55/30, uipx*17/30, uipx*17/30, uipx*1/6);
+    rect(w/2-uipx*(100-17)/30, h/2-uipx*55/30, uipx*17/30, uipx*17/30, uipx*1/6);
+    rect(w/2-uipx*(100+17)/30, h/2-uipx*55/30, uipx*17/30, uipx*17/30, uipx*1/6);
+    rect(w/2-uipx*10/3, h/2-uipx*72/30, uipx*17/30, uipx*17/30, uipx*1/6);
     fill(uisc);
-    triangle(w/2-100+0.25, h/2-55, w/2-100-0.25, h/2-55, w/2-100, h/2-55+0.35);
-    triangle(w/2-100+0.25, h/2-72, w/2-100-0.25, h/2-72, w/2-100, h/2-72-0.35);
-    triangle(w/2-100-17, h/2-55+0.25, w/2-100-17, h/2-55-0.25, w/2-100-17-0.35, h/2-55);
-    triangle(w/2-100+17, h/2-55+0.25, w/2-100+17, h/2-55-0.25, w/2-100+17+0.35, h/2-55);
+    triangle(w/2-uipx*(100+0.25)/30, h/2-uipx*55/30, w/2-uipx*(100-0.25)/30, h/2-uipx*55/30, w/2-uipx*10/3, h/2-uipx*(55+0.35)/30);
+    triangle(w/2-uipx*(100+0.25)/30, h/2-uipx*72/30, w/2-uipx*(100-0.25)/30, h/2-uipx*72/30, w/2-uipx*10/3, h/2-uipx*(72-0.35)/30);
+    triangle(w/2-uipx*(100-17)/30, h/2-uipx*(55+0.25)/30, w/2-uipx*(100-17)/30, h/2-uipx*(55-0.25)/30, w/2-uipx*(100-17-0.35)/30, h/2-uipx*55/30);
+    triangle(w/2-uipx*(100+17)/30, h/2-uipx*(55+0.25)/30, w/2-uipx*(100+17)/30, h/2-uipx*(55-0.25)/30, w/2-uipx*(100+17+0.35)/30, h/2-uipx*55/30);
     fill(uihc-50);
-    rect(w/2-100, h/2, 50, 80, 30);
-    rect(w/2-100-12.5, h/2-20, 25, 40, 5);
+    rect(w/2-uipx*10/3, h/2, uipx*5/3, uipx*8/3, uipx);
+    rect(w/2-uipx*(100-12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
     fill(uihc+10);
     // fill(cPalette[cSelectIndex][2]);
-    rect(w/2-100+12.5, h/2-20, 25, 40, 5);
+    rect(w/2-uipx*(100+12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
     fill(uihc-50);
-    rect(w/2-100, h/2-10, 7, 20, 7);
+    rect(w/2-uipx*10/3, h/2-uipx*1/3, uipx*7/30, uipx*2/3, uipx*7/30);
     
     // Zoom
-    rect(w/2+100-14, h/2-57, 22, 22, 5);
-    rect(w/2+100+14, h/2-57, 22, 22, 5);
+    rect(w/2+uipx*(100-14)/30, h/2-uipx*57/30, uipx*22/30, uipx*22/30, uipx*1/6);
+    rect(w/2+uipx*(100+14)/30, h/2-uipx*57/30, uipx*22/30, uipx*22/30, uipx*1/6);
     fill(uisc);
     noStroke();
-    textSize(20);
+    textSize(uipx*2/3);
     textStyle(BOLD);
-    text('+', w/2+100-14, h/2-57);
-    text('-', w/2+100+14, h/2-57);
+    text('+', w/2+uipx*(100-14)/30, h/2-uipx*57/30);
+    text('-', w/2+uipx*(100+14)/30, h/2-uipx*57/30);
     stroke(uibc-50);
     fill(uihc-50);
-    rect(w/2+100, h/2, 50, 80, 30);
-    rect(w/2+100-12.5, h/2-20, 25, 40, 5);
-    rect(w/2+100+12.5, h/2-20, 25, 40, 5);
+    rect(w/2+uipx*10/3, h/2, uipx*5/3, uipx*8/3, uipx);
+    rect(w/2+uipx*(100-12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
+    rect(w/2+uipx*(100+12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
     fill(uihc+10);
     // fill(cPalette[cSelectIndex][2]);
-    rect(w/2+100, h/2-10, 7, 20, 7);
+    rect(w/2+uipx*10/3, h/2-uipx*1/3, uipx*7/30, uipx*2/3, uipx*7/30);
     fill(uihc-50);
     
     textStyle(BOLDITALIC);
-    textSize(25);
+    textSize(uipx*5/6);
     fill(uihc);
-    text('pan', w/2-100, h/2+60);
-    text('draw', w/2, h/2+60);
-    text('zoom', w/2+100, h/2+60);
+    text('pan', w/2-uipx*10/3, h/2+uipx*2);
+    text('draw', w/2, h/2+uipx*2);
+    text('zoom', w/2+uipx*10/3, h/2+uipx*2);
+
     textSize(uipx/1.5);
     textAlign(LEFT);
     text('color palette', helpbx-uipx*0.35, cPaletteh+10);
