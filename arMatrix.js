@@ -77,7 +77,7 @@ let nFixedColors = cPaletteFixed.length; // Number of preselected colors
 let cPalette = []; // Holds all color palette data
 
 // Interactivity & related visuals
-let uipx = 30; // UI button length
+let uipx = 40; // UI button length
 let uibcpx = uipx/10; // UI curved border amount
 let uisdpx = uipx/10; // UI shadow X, Y displacement
 let uibc = 80; // UI button color
@@ -135,7 +135,7 @@ let mouseIndex; // Holds output from mousePosToMatrixIndex()
 let wheelDelta; // temporary holder of last mouse wheel scroll value
 let onHelp = false; // Mouse pointer currently close of help GUI element (set in mouseOnGUI())
 let onHelpButton = false; // Mouse pointer currently on top of help button
-let helping = false; // Currently showing help overlay
+let helping = true; // Currently showing help overlay
 let helped = false; // Was showing help overlay on previous frame
 let helpbx; // Help button x pos (set in setup)
 let helpby; // Help button y pos (set in setup)
@@ -258,8 +258,6 @@ function initMatrix() {
 
 
 function initGUI() {
-  initSaveMenu();
-
   i = 1;
   for (let button of clickButtonArray) {
     button[0] = w-uipx/1.25;
@@ -308,6 +306,8 @@ function initGUI() {
       load.position(w-uipx/1.25-uipx/2, (i*2-1)*uipx/1.25-uipx/2);
     } i++;
   }
+
+  initSaveMenu();
 }
 
 
@@ -534,15 +534,20 @@ function baseButton(x, y, color) {
 
 
 function reCenterButton(x, y) {
+  if (hPan || vPan || zoom != 1.0) {
+    hcFillValue = uihc;
+  } else{
+    hcFillValue = uihcoff;
+  }
   fill(uisc);
   noStroke();
   rect(x + uisdpx, y + uisdpx, uipx, uipx, uibcpx);
   baseButton(x, y, uibc);
-  fill(uihc);
+  fill(hcFillValue);
   ellipse(x, y, uipx*2.25/3);
   fill(uibc);
   ellipse(x, y, uipx*1.9/3);
-  fill(uihc);
+  fill(hcFillValue);
   ellipse(x, y, uipx*1/5);
 }
 
@@ -694,7 +699,7 @@ function drawClickButtons() {
     by = button[1];
     bdraw = button[3];
     bdraw(bx, by);
-    if (button[7] && !helping && ((button[5] != 'undo' && button[5] != 'redo') || (button[5] == 'undo' && cm > 0) || (button[5] == 'redo' && cm != mHist.length-1))) {
+    if (button[7] && !helping && (button[5] != 'recenter' || (button[5] == 'recenter' && (hPan || vPan || zoom != 1.0))) && ((button[5] != 'undo' && button[5] != 'redo') || (button[5] == 'undo' && cm > 0) || (button[5] == 'redo' && cm != mHist.length-1))) {
       noFill();
       stroke(uihc);
       strokeWeight(2);
@@ -817,25 +822,25 @@ function showHelp() {
     text('pan', w/2-100, h/2+60);
     text('draw', w/2, h/2+60);
     text('zoom', w/2+100, h/2+60);
-    textSize(20);
+    textSize(uipx/1.5);
     textAlign(LEFT);
     text('color palette', helpbx-uipx*0.35, cPaletteh+10);
-    textSize(15);
+    textSize(uipx/2);
     textStyle(ITALIC);
     fill(uihc-50);
-    text('click on a color once to select it, and a second time to modify it', helpbx-uipx*0.35, cPaletteh+30);
-    text('is the background color', helpbx-uipx*0.35+(1.75*uipxp/1.75), cPaletteh+50); 
+    text('click on a color once to select it, and a second time to modify it', helpbx-uipx*0.35, cPaletteh+10+uipx/1.5);
+    text('is the background color', helpbx-uipx*0.35+(1.75*uipxp/1.75), cPaletteh+10+uipx*1.25); 
     textAlign(CENTER, CENTER);
     text('github.com/TomoBossi/ArMatrix', w/2, h-15);
     textAlign(RIGHT);
     textStyle(NORMAL);
-    textSize(11);
+    textSize(uipx/2.9);
     fill(uihc-30);
     for (let i = 0; i < clickButtonArray.length; i++) {
-      text(clickButtonArray[i][6], w-2*uipx/1.25, clickButtonArray[i][1]+uipx/2.25);
+      text(clickButtonArray[i][6], w-2*uipx/1.25, clickButtonArray[i][1]+uipx/1.75);
     }
     textStyle(BOLDITALIC);
-    textSize(15);
+    textSize(uipx/2);
     fill(uihc);
     for (let i = 0; i < clickButtonArray.length; i++) {
       text(clickButtonArray[i][5], w-2*uipx/1.25, clickButtonArray[i][1]);
@@ -858,7 +863,7 @@ function showHelp() {
         text('BG', bx, by);
         textAlign(LEFT);
         stroke(uibc-50);
-        text('BG', helpbx-uipx*0.35, cPaletteh+50);
+        text('BG', helpbx-uipx*0.35, cPaletteh+10+uipx*1.25);
         noFill();
         stroke(uihc);
         strokeWeight(2);
@@ -1627,10 +1632,10 @@ function saveMenu() { // Relatively self-contained .png saving menu
 
 
 function initSaveMenu() {
-  saveMenuGUIx = w/2;
-  saveMenuGUIy = h/2;
   menupxw = 8*uipx;
   menupxh = 7*uipx;
+  saveMenuGUIx = w-menupxw/2-1.75*uipx;
+  saveMenuGUIy = clickButtonArray[clickButtonArray.length-1][1]-menupxh/2+uipx/2;
   saveMenuGUIw = menupxw+uipx;
   saveMenuGUIh = menupxh+uipx;
   menuDeltah = uipx/1.75;
