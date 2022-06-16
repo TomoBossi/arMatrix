@@ -1,4 +1,5 @@
 // To do list:
+//   - optimize cursor hover checks, without breaking anything
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
@@ -6,7 +7,6 @@
 //   - rect tool, circle tool
 //   - select -> copy/cut -> move tool
 //   - hue shifting, somehow
-//   - optimize cursor hover checks, without breaking anything
 //   - optimize display to lower amount of rectangles and/or lines, if at all possible
 //   - turn buttons & palette into objects of their respective classes, better for referencing each button (instead of using label)
 
