@@ -725,7 +725,7 @@ function drawColorPalette() {
       noStroke();
       fill(uisc);
       rect(bx + uisdpx, by + uisdpx, uipxp, uipxp, uipscl*uibcpx);
-      if (!helping && !isSelected && on) {
+      if (!helping && on) {
         stroke(bgc);
         strokeWeight(uipxp/15);
         fill(uihc);
