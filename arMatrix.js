@@ -791,10 +791,10 @@ function showHelp() {
     triangle(w/2-uipx*(100+17)/30, h/2-uipx*(55+0.25)/30, w/2-uipx*(100+17)/30, h/2-uipx*(55-0.25)/30, w/2-uipx*(100+17+0.35)/30, h/2-uipx*55/30);
     fill(uihc-50);
     rect(w/2-uipx*10/3, h/2, uipx*5/3, uipx*8/3, uipx);
-    rect(w/2-uipx*(100-12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
-    fill(uihc+10);
-    // fill(cPalette[cSelectIndex][2]);
     rect(w/2-uipx*(100+12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
+    fill(uihc);
+    // fill(cPalette[cSelectIndex][2]);
+    rect(w/2-uipx*(100-12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
     fill(uihc-50);
     rect(w/2-uipx*10/3, h/2-uipx*1/3, uipx*7/30, uipx*2/3, uipx*7/30);
     
@@ -812,7 +812,7 @@ function showHelp() {
     rect(w/2+uipx*10/3, h/2, uipx*5/3, uipx*8/3, uipx);
     rect(w/2+uipx*(100-12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
     rect(w/2+uipx*(100+12.5)/30, h/2-uipx*2/3, uipx*5/6, uipx*4/3, uipx*1/6);
-    fill(uihc+10);
+    fill(uihc);
     // fill(cPalette[cSelectIndex][2]);
     rect(w/2+uipx*10/3, h/2-uipx*1/3, uipx*7/30, uipx*2/3, uipx*7/30);
     fill(uihc-50);
