@@ -1188,10 +1188,10 @@ function keyPressed() {
             keyLogger = keyLogger.slice(1, keyLogger.length);
           }
           if (keyLogger.slice(-9, keyLogger.length) == 'SUSSYBAKA') {
-            m = sussybaka[0];
-            mw = sussybaka[0][0].length;
-            mh = sussybaka[0].length;
-            setPalette(sussybaka[1]);
+            m = deepCopy2D(sussybaka[0]);
+            mw = m[0].length;
+            mh = m.length;
+            setPalette(deepCopy2D(sussybaka[1]));
             vPan = 5660;
             hPan = -13060;
             zoom = 0.05;
