@@ -789,8 +789,8 @@ function showHelp() {
     rect(w/2-uipx*(100+17)/30, h/2-uipx*55/30, uipx*17/30, uipx*17/30, uipx*1/6);
     rect(w/2-uipx*10/3, h/2-uipx*72/30, uipx*17/30, uipx*17/30, uipx*1/6);
     fill(uisc);
-    triangle(w/2-uipx*(100+0.25)/30, h/2-uipx*55/30, w/2-uipx*(100-0.25)/30, h/2-uipx*55/30, w/2-uipx*10/3, h/2-uipx*(55+0.35)/30);
-    triangle(w/2-uipx*(100+0.25)/30, h/2-uipx*72/30, w/2-uipx*(100-0.25)/30, h/2-uipx*72/30, w/2-uipx*10/3, h/2-uipx*(72-0.35)/30);
+    triangle(w/2-uipx*(100+0.25)/30, h/2-uipx*55/30, w/2-uipx*(100-0.25)/30, h/2-uipx*55/30, w/2-uipx*10/3, h/2-uipx*(55-0.35)/30);
+    triangle(w/2-uipx*(100+0.25)/30, h/2-uipx*72/30, w/2-uipx*(100-0.25)/30, h/2-uipx*72/30, w/2-uipx*10/3, h/2-uipx*(72+0.35)/30);
     triangle(w/2-uipx*(100-17)/30, h/2-uipx*(55+0.25)/30, w/2-uipx*(100-17)/30, h/2-uipx*(55-0.25)/30, w/2-uipx*(100-17-0.35)/30, h/2-uipx*55/30);
     triangle(w/2-uipx*(100+17)/30, h/2-uipx*(55+0.25)/30, w/2-uipx*(100+17)/30, h/2-uipx*(55-0.25)/30, w/2-uipx*(100+17+0.35)/30, h/2-uipx*55/30);
     fill(uihc-50);
