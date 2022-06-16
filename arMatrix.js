@@ -1192,7 +1192,9 @@ function keyPressed() {
             mw = sussybaka[0][0].length;
             mh = sussybaka[0].length;
             setPalette(sussybaka[1]);
-            reCenter();
+            vPan = 5660;
+            hPan = -13060;
+            zoom = 0.05;
             mod = true;
           }
         }
