@@ -401,13 +401,13 @@ function updatePan() {
   let u = !saveMenuing && (keyIsDown(UP_ARROW) || (keyIsDown(87) && !(ctrl || shift)));
   let d = !saveMenuing && (keyIsDown(DOWN_ARROW) || (keyIsDown(83) && !(ctrl || shift)));
   if (r) {
-    hPan -= p;
+    hPan -= p/zoom;
   } if (l) {
-    hPan += p;
+    hPan += p/zoom;
   } if (u) {
-    vPan += p;
+    vPan += p/zoom;
   } if (d) {
-    vPan -= p;
+    vPan -= p/zoom;
   }
   
   if (mouseIsPressed) {
@@ -1138,7 +1138,7 @@ function setPalette(p) {
 
 
 function keyPressed() {
-
+  // https://www.toptal.com/developers/keycode
   ctrl = keyIsDown(17);
   shift = keyIsDown(16);
   if (!saveMenuing) {
@@ -1192,8 +1192,8 @@ function keyPressed() {
             mw = m[0].length;
             mh = m.length;
             setPalette(deepCopy2D(sussybaka[1]));
-            vPan = 5660;
-            hPan = -13060;
+            vPan = 6300;
+            hPan = -13380;
             zoom = 0.05;
             mod = true;
           }
