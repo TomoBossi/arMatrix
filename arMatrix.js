@@ -86,7 +86,7 @@ let uisc = bgc/2; // UI shadow color
 let uihc = 200; // UI highlight color
 let uihcoff = uihc*3/4; // UI highlight color (tool disabled, uihcoff < uihc)
 let hcFillValue; // Placeholder variable for either uihc or uihcoff, accordingly
-let uipscl = 0.75; // Scale of palette buttons in relation to the rest of the buttons
+let uipscl = 0.6; // Scale of palette buttons in relation to the rest of the buttons
 let uipxp = uipx*uipscl; // Palette button length
 let undoredo = true; // Undo or Redo was used during the previous frame, init value must be true
 let clickButtonArray = [[0, 0, undo, undoButton, null, 'undo', 'ctrl + Z', false],
@@ -835,7 +835,7 @@ function showHelp() {
     textStyle(ITALIC);
     fill(uihc-50);
     text('click on a color once to select it, and a second time to modify it', helpbx-uipx*0.35, cPaletteh+10+uipx/1.5);
-    text('is the background color', helpbx-uipx*0.35+(1.75*uipxp/1.75), cPaletteh+10+uipx*1.25); 
+    text('is the background color', helpbx-uipx*0.35+(1.75*uipx/2.5), cPaletteh+10+uipx*1.25); 
     textAlign(CENTER, CENTER);
     text('github.com/TomoBossi/ArMatrix', w/2, h-15);
     textAlign(RIGHT);
@@ -869,6 +869,7 @@ function showHelp() {
         text('BG', bx, by);
         textAlign(LEFT);
         stroke(uibc-50);
+        textSize(uipx/2.5);
         text('BG', helpbx-uipx*0.35, cPaletteh+10+uipx*1.25);
         noFill();
         stroke(uihc);
