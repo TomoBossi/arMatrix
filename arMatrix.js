@@ -1,5 +1,5 @@
 // To do list:
-//   - fix cWheel on blue side border (use HSB calculation from distance and angle to center of circle, not color of pixel) 
+//   - fix hover checks for efficiency
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
 //   - cut tool (keep part of matrix)
@@ -103,6 +103,7 @@ let bdraw; // Placeholders for button information (x, y, cursorOnTop, func)
 let nClickButtons = clickButtonArray.length; // Number of clickable buttons
 let ctrl = false; // Ctrl key is being held down
 let shift = false; // Shift key is being held down
+
 let cPick; // Color picked from color wheel
 let cHover; // Color under pointer from color wheel
 let cPicking = false; // Currently picking a color using the color wheel
@@ -110,6 +111,7 @@ let cPickedHolding = false; // cPicking just turned false because of mouse press
 let clickedOnColor = false; // On mouse click, some color from the palette was clicked
 let cPickingIndex = null; // Index (cPalette) of color being currently picked
 let cSelectIndex; // Index (cPalette) of currently selected color (set in setup, defaults to 1 if possible)
+
 let vMod = false; // Currently modifying luminosity value on color wheel
 let v = 0.8; // Luminosity value
 let pxIndex; // Index of current pixel while hovering over color wheel
@@ -117,6 +119,7 @@ let cWheel; // Holds the actual wheel image, precomputed in setup
 let cWx; // Color wheel x pos (set in setup)
 let cWy; // Color wheel y pos (set in setup)
 let cWd = uipx*4; // Color wheel diameter
+let cWr = cWd/2; // Color Wheel radius
 let onGUI; // Mouse pointer currently close to GUI elements (palette, tools, etc.)
 let cPalettew;
 let cPaletteh;
@@ -869,31 +872,17 @@ function showHelp() {
 
 
 function checkCursorHover() {
-  if (onGUI) {
-    if (onClickButtons) {
-      for (let button of clickButtonArray) {
-        bx = button[0];
-        by = button[1];
-        button[7] = mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2;
-      }
-    }
-    if (onPalette) {
-      for (let valCol of cPalette) {
-        bx = valCol[3];
-        by = valCol[4];
-        valCol[5] = mouseX > bx - uipxp/2 && mouseX < bx + uipxp/2 && mouseY > by - uipxp/2 && mouseY < by + uipxp/2;
-      }
-    } 
-    onHelpButton = mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7;
-  } else {
-    for (let button of clickButtonArray) {
-      button[7] = false;
-    } 
-    for (let valCol of cPalette) {
-      valCol[5] = false;
-    }
-    onHelpButton = false; 
+  for (let button of clickButtonArray) {
+    bx = button[0];
+    by = button[1];
+    button[7] = mouseX > bx - uipx/2 && mouseX < bx + uipx/2 && mouseY > by - uipx/2 && mouseY < by + uipx/2;
   }
+  for (let valCol of cPalette) {
+    bx = valCol[3];
+    by = valCol[4];
+    valCol[5] = mouseX > bx - uipxp/2 && mouseX < bx + uipxp/2 && mouseY > by - uipxp/2 && mouseY < by + uipxp/2;
+  }
+  onHelpButton = mouseX > helpbx - uipx/2*0.7 && mouseX < helpbx + uipx/2*0.7 && mouseY > helpby - uipx/2*0.7 && mouseY < helpby + uipx/2*0.7;
 }
 
 
@@ -959,15 +948,14 @@ function mouseClicked() {
   }
   // Wheel
   if (cPicking) {
-    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2-1) {
-      pxIndex = (mouseY * w + mouseX) * pxd * 4;
-      loadPixels();
-      cPick = [pixels[pxIndex],
-               pixels[pxIndex + 1],
-               pixels[pxIndex + 2],
-               pixels[pxIndex + 3]];
-      updatePixels();
-      cPick = [cPick[0]*v, cPick[1]*v, cPick[2]*v];
+    ww = cWd;
+    wh = cWd;
+    rx = mouseX - cWx -1;
+    ry = mouseY - cWy -1;
+    cS = (sqrt(sq(rx) + sq(ry)) / (0.95*cWr));
+    if (cS <= 1.05) {
+      cH = ((atan2(rx, ry) / PI) + 1.0) / 2;
+      cPick = HSVtoRGB(cH, cS, v);
       cPalette[cPickingIndex][1] = [...cPick];
       cPickingIndex = null;
       cPicking = false;
@@ -1005,6 +993,51 @@ function mouseClicked() {
     if (onExit) {
       closeSaveMenu();
     }
+  }
+}
+
+
+
+function HSVtoRGB(h, s, v) {
+  // https://stackoverflow.com/questions/17242144/javascript-convert-hsb-hsv-color-to-rgb-accurately
+  var r, g, b, i, f, p, q, t;
+  if (arguments.length === 1) {
+      s = h.s, v = h.v, h = h.h;
+  }
+  i = Math.floor(h * 6);
+  f = h * 6 - i;
+  p = v * (1 - s);
+  q = v * (1 - f * s);
+  t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+      case 0: r = v, g = t, b = p; break;
+      case 1: r = q, g = v, b = p; break;
+      case 2: r = p, g = v, b = t; break;
+      case 3: r = p, g = q, b = v; break;
+      case 4: r = t, g = p, b = v; break;
+      case 5: r = v, g = p, b = q; break;
+  }
+  return [r*255, g*255, b*255];
+}
+
+
+
+function updateHoverColor() {
+  if (cPicking) {
+    ww = cWd;
+    wh = cWd;
+    rx = mouseX - cWx -1;
+    ry = mouseY - cWy -1;
+    cS = (sqrt(sq(rx) + sq(ry)) / (0.95*cWr));
+    if (cS <= 1.05) {
+      cH = ((atan2(rx, ry) / PI) + 1.0) / 2;
+      cHover = HSVtoRGB(cH, cS, v);
+      cPalette[cPickingIndex][2] = [...cHover];
+    } else {
+      cPalette[cPickingIndex][2] = [...cPalette[cPickingIndex][1]]; // reset color to cPick
+    }
+  } else if (cPickingIndex) {
+    cPalette[cPickingIndex][2] = [...cPalette[cPickingIndex][1]]; // reset color to cPick
   }
 }
 
@@ -1067,28 +1100,6 @@ function drawColorWheel() {
     fill(uihc);
     ellipse(cWx-cWd/2+v*cWd, cWy + cWd/1.55, cWd/20);
     rectMode(CENTER);
-  }
-}
-
-
-
-function updateHoverColor() {
-  if (cPicking) {
-    if (dist(mouseX, mouseY, cWx, cWy) < cWd/2-2) {
-      pxIndex = (mouseY * w + mouseX) * pxd * 4;
-      loadPixels();
-      cHover = [pixels[pxIndex],
-                pixels[pxIndex + 1],
-                pixels[pxIndex + 2],
-                pixels[pxIndex + 3]];
-      updatePixels();
-      cHover = [cHover[0]*v, cHover[1]*v, cHover[2]*v];
-      cPalette[cPickingIndex][2] = cHover;
-    } else {
-      cPalette[cPickingIndex][2] = [...cPalette[cPickingIndex][1]]; // reset color to cPick
-    }
-  } else if (cPickingIndex) {
-    cPalette[cPickingIndex][2] = [...cPalette[cPickingIndex][1]]; // reset color to cPick
   }
 }
 
@@ -1460,8 +1471,8 @@ function cWheelShader() {
     for (let y = 0; y < cWheel.width; y++) {
       rx = x - cx;
       ry = y - cy;
-      cS = (sqrt(sq(rx) + sq(ry)) / (0.95*radius));
-      if (cS <= 1.05) {
+      cS = (sqrt(sq(rx) + sq(ry)) / (radius));
+      if (cS <= 1) {
         cH = ((atan2(rx, ry) / PI) + 1.0) / 2;
         cWheel.set(x, y, color(cH * 360, cS * 100, 100));
       }
