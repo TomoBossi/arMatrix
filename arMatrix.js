@@ -196,7 +196,7 @@ let menuSaveButtony; // save button xpos and ypos (set in setup), uses uipx for 
 function setup() {  
   // Initialize canvas
   w = constrain(windowWidth,  666, windowWidth);
-  h = constrain(windowHeight, 500, windowHeight)
+  h = constrain(windowHeight, 500, windowHeight);
   createCanvas(w, h);
   // Misc
   smooth();
@@ -212,7 +212,7 @@ function setup() {
   // Initialize GUI
   initGUI();
   // Initilize history
-  mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()]);
+  mHist.push([deepCopy2D(m), getCurrentPalette()]);
 }
 
 
@@ -336,7 +336,7 @@ function mModHandler() {
     if (!undoredo) { // If undo or redo, the problem gets adressed in undo() or redo()
       cm++;
       mHist = mHist.slice(0, cm);
-      mHist.push([deepCopy2D(m), mw, mh, getCurrentPalette()]);
+      mHist.push([deepCopy2D(m), getCurrentPalette()]);
     }
     mod      = false;
     undoredo = false;
@@ -484,9 +484,9 @@ function undo() {
     cm--;
     nm = mHist[cm];
     m  = deepCopy2D(nm[0]);
-    mw = nm[1];
-    mh = nm[2];
-    p  = deepCopy2D(nm[3]);
+    mw = m[0].length;
+    mh = m.length;
+    p  = deepCopy2D(nm[1]);
     setPalette(p);
     mod = true;
     undoredo = true;
@@ -500,9 +500,9 @@ function redo() {
     cm++;
     nm = mHist[cm];
     m  = deepCopy2D(nm[0]);
-    mw = nm[1];
-    mh = nm[2];
-    p  = deepCopy2D(nm[3]);
+    mw = m[0].length;
+    mh = m.length;
+    p  = deepCopy2D(nm[1]);
     setPalette(p);
     mod = true;
     undoredo = true;
@@ -1538,6 +1538,10 @@ function saveMenu() { // Relatively self-contained .png saving menu
     strokeWeight(1+1*onCrop*!mEmpty);
     stroke(uihc, 100+155*onCrop*!mEmpty);
     rect(saveMenuButtonx, cropy, toggleSize, toggleSize, uibcpx);
+    if (mEmpty) {
+      line(saveMenuButtonx-toggleSize/2.5, cropy-toggleSize/2.5, saveMenuButtonx+toggleSize/2.5, cropy+toggleSize/2.5);
+      line(saveMenuButtonx+toggleSize/2.5, cropy-toggleSize/2.5, saveMenuButtonx-toggleSize/2.5, cropy+toggleSize/2.5);
+    }
     strokeWeight(1+1*onTrans);
     stroke(uihc, 100+155*onTrans);
     rect(saveMenuButtonx, transy, toggleSize, toggleSize, uibcpx);
