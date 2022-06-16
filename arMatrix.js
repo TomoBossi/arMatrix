@@ -1185,7 +1185,7 @@ function keyPressed() {
         if (keyCode === k+65) {
           keyLogger += char(k+65);
           if (keyLogger.length > 100) {
-            keyLogger = keyLogger.slice(1, keyLogger.length)
+            keyLogger = keyLogger.slice(1, keyLogger.length);
           }
           if (keyLogger.slice(-9, keyLogger.length) == 'SUSSYBAKA') {
             m = sussybaka[0];
@@ -1230,12 +1230,12 @@ function keyPressed() {
       if (savePxScale > 9) {
         tempScale = tempScale.slice(0, tempScale.length-1);
       } else {
-        tempScale = '1'
+        tempScale = '1';
         backToMinScale = true;
       }
       stillSaveMenuing = true;
     }
-    savePxScale = int(tempScale)
+    savePxScale = int(tempScale);
     if (savePxScale > maxScale || savePxScale < 1) {
       savePxScale = constrain(savePxScale, 1, maxScale);
     }
@@ -1258,10 +1258,10 @@ function mouseOnGUI() {
   onWheel        = mouseX < cWheelw && mouseY < cPaletteh + cWheelh && mouseY > cPaletteh;
   onHelp         = mouseX < helpbx*2 && mouseY > 2*helpby - h;
   if (saveMenuing) {
-    onSaveMenu  = mouseX < saveMenuGUIx + saveMenuGUIw/2 && mouseX > saveMenuGUIx - saveMenuGUIw/2
-    onSaveMenu *= mouseY < saveMenuGUIy + saveMenuGUIh/2 && mouseY > saveMenuGUIy - saveMenuGUIh/2
+    onSaveMenu  = mouseX < saveMenuGUIx + saveMenuGUIw/2 && mouseX > saveMenuGUIx - saveMenuGUIw/2;
+    onSaveMenu *= mouseY < saveMenuGUIy + saveMenuGUIh/2 && mouseY > saveMenuGUIy - saveMenuGUIh/2;
   } else {
-    onSaveMenu = false
+    onSaveMenu = false;
   }
   if (onPalette || onClickButtons || (cPicking && onWheel) || onHelp || vMod || (saveMenuing && onSaveMenu)) {
     onGUI = true;
@@ -1292,7 +1292,7 @@ function GUIdebug() {
   
   rectMode(CENTER);
   if (saveMenuing) {
-    rect(saveMenuGUIx, saveMenuGUIy, saveMenuGUIw, saveMenuGUIh)
+    rect(saveMenuGUIx, saveMenuGUIy, saveMenuGUIw, saveMenuGUIh);
   }
 }
 
