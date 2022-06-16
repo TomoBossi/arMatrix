@@ -1192,8 +1192,8 @@ function keyPressed() {
             mw = m[0].length;
             mh = m.length;
             setPalette(deepCopy2D(sussybaka[1]));
-            vPan = 6300;
-            hPan = -13380;
+            vPan = 20*h/2.2;
+            hPan = -20*w/2;
             zoom = 0.05;
             mod = true;
           }
