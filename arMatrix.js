@@ -1664,6 +1664,8 @@ function openSaveMenu() {
     if (mEmpty) {
       saveCrop = false;
     }
+  } else {
+    savePNG();
   }
 }
 
