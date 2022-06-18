@@ -1141,6 +1141,7 @@ function setPalette(p) {
 
 function keyPressed() {
   // https://www.toptal.com/developers/keycode
+  console.log(keyCode);
   ctrl = keyIsDown(17);
   shift = keyIsDown(16);
   if (!saveMenuing) {
@@ -1170,7 +1171,12 @@ function keyPressed() {
           cPicking = false;
           cSelectIndex = i+nNeg;
         }
-      } if (keyCode === 81) {
+      }
+      if (keyCode === 172) {
+        cPicking = false;
+        cSelectIndex = nNeg;
+      } 
+      if (keyCode === 81) {
         cPicking = false;
         if (cSelectIndex > 0) {
           cSelectIndex--;
