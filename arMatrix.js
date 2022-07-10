@@ -1,4 +1,5 @@
 // To do list:
+//   - improve performance at higher resolutions by drawing the pixel grid using WEBGL (https://npm.io/package/pixel-grid, https://stackoverflow.com/questions/31892414/draw-each-pixel-separately-webgl, https://pixijs.com/)
 //   - optimize cursor hover checks, without breaking anything
 //   - highlight corresponding color in color palete when hovering on pixel, and inverse
 //   - line tool, toggleable tools selection panel on lower right, use line tool logic to fill gaps when free drawing
